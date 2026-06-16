@@ -1,8 +1,14 @@
 # vault-memory
 
+[![Status](https://img.shields.io/badge/status-stable%20(v0.1.1)-green)](STATUS.md)
+[![Tests](https://img.shields.io/badge/tests-7%2F7%20passing-brightgreen)](STATUS.md)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+
 Cross-agent plugin for **Obsidian + Qdrant + Neo4j** memory. Works with **Grok Build**, **Claude Code**, and **Hermes Agent**.
 
 Built from patterns engineers use successfully: markdown vault as source of truth, local embeddings, Docker-pinned databases, MCP stdio, incremental sync.
+
+> **Current status:** v0.1.1 — tested, installed in Grok Build, [full details in STATUS.md](STATUS.md).
 
 ## Architecture
 

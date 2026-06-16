@@ -1,6 +1,6 @@
 [project]
 name = "vault-memory-mcp"
-version = "0.1.0"
+version = "0.1.1"
 description = "MCP server: Obsidian vault + Qdrant vectors + Neo4j graph"
 readme = "README.md"
 requires-python = ">=3.12"
