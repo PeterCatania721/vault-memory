@@ -1,0 +1,19 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+# Keep mcp-server/uv.lock committed for reproducible installs
+*.egg-info/
+dist/
+build/
+
+.vault-memory/
+config.yaml
+!config/vault-memory.example.yaml
+
+docker/.env
+*.log
+
+.DS_Store

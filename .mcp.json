@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "vault-memory": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "${GROK_PLUGIN_ROOT}/mcp-server",
+        "vault-memory-mcp"
+      ],
+      "env": {
+        "VAULT_MEMORY_CONFIG": "${GROK_PLUGIN_DATA}/config.yaml"
+      }
+    }
+  }
+}
