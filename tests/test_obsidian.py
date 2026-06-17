@@ -19,7 +19,7 @@ def test_read_note_wikilinks():
 
 
 def test_keyword_search():
-    hits = keyword_search(FIXTURES, "Qdrant", limit=5)
+    hits = keyword_search(FIXTURES, "Neo4j", limit=5)
     assert len(hits) == 1
     assert hits[0]["path"] == "project-alpha.md"
 

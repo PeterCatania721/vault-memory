@@ -1,5 +1,33 @@
 # Release notes
 
+## 0.2.1 — 2026-06-17
+
+- Provenance GraphRAG: `search_vault_hybrid`, `provenance_trail`, `query_stale_facts`
+- Stable Fact IDs; Version/System nodes; SPOIL_AFTER edges
+- Curator log frontmatter; `add_research_memory` triggers curator preview
+- Docs updated for Neo4j-only stack
+
+## 0.2.0 — 2026-06-16
+
+- **Neo4j-only architecture** — Qdrant removed from docker-compose and sync path
+- Vectors on `:Chunk` and `:Verification` nodes (Neo4j vector indexes)
+- Provenance layer: Fact/Source/TestRun graph from YAML frontmatter
+- MCP: `add_research_memory`, `upsert_note_provenance`, `search_vault_hybrid`, `search_vault_graphrag`
+- Rule-based curator: `spoil_after_days` + no `verified_in` success in 90d → archive
+- Scripts: `add_research_memory.py`, `backfill_memory_frontmatter.py`, `migrate-qdrant-to-neo4j.py`
+- 70 tests (unit + integration including provenance chain)
+
+### Migration from 0.1.x (Qdrant + Neo4j)
+
+| v0.1.x | v0.2+ |
+|--------|-------|
+| 2 Docker containers (Qdrant + Neo4j) | 1 container (Neo4j) |
+| Dual sync + dual orphan prune | Single Neo4j sync |
+| Semantic in Qdrant, graph in Neo4j | Both in Neo4j |
+| No provenance graph | Fact → Source → TestRun in Neo4j |
+
+Re-index from Obsidian: `sync_vault force=true`. Optional one-shot: `scripts/migrate-qdrant-to-neo4j.py`.
+
 ## 0.1.2 — 2026-06-16
 
 - Curator: Elon-style archive/compress with pin/protect rules

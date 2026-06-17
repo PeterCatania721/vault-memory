@@ -44,7 +44,7 @@ def test_list_and_read_notes(isolated_config):
 
 
 def test_search_vault_keyword(isolated_config):
-    hits = json.loads(srv.search_vault_keyword("Qdrant", limit=5))
+    hits = json.loads(srv.search_vault_keyword("Neo4j", limit=5))
     assert hits["results"]
     assert hits["results"][0]["path"] == "project-alpha.md"
 

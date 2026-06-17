@@ -1,5 +1,5 @@
 # Project Alpha
 
-Decision: use Qdrant for vector search and Neo4j for wikilinks.
+Decision: use Neo4j for vector search, wikilinks, and provenance graph.
 
 Related: [[architecture-notes]]

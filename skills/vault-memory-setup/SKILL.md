@@ -1,14 +1,16 @@
 ---
 name: vault-memory-setup
 description: >
-  Install and configure vault-memory (Obsidian + Qdrant + Neo4j). Use when setting up
-  the plugin, starting Docker databases, editing ~/.vault-memory/config.yaml, or runs
+  Install and configure vault-memory (Obsidian + Neo4j graph/vector). Use when setting up
+  the plugin, starting Docker, editing ~/.vault-memory/config.yaml, or runs
   /vault-memory-setup. Software 3.0 — read config with get_config, update with update_config.
 ---
 
 # vault-memory Setup
 
-Battle-tested stack: **Obsidian markdown vault** (source of truth) → **Qdrant** (semantic search) → **Neo4j** (wikilink graph) → **MCP stdio** (Grok, Claude Code, Hermes).
+Stack: **Obsidian markdown vault** (source of truth) → **Neo4j** (wikilinks + chunk embeddings + provenance graph) → **MCP stdio** (Grok, Claude Code, Hermes).
+
+**v0.2+:** One Docker container (Neo4j). Qdrant is not used.
 
 ## Quick install
 
@@ -18,7 +20,18 @@ bash scripts/install.sh
 bash scripts/docker-up.sh
 ```
 
-Edit `~/.vault-memory/config.yaml` — set `vault.path` to your Obsidian vault.
+Edit `~/.vault-memory/config.yaml`:
+
+```yaml
+vault:
+  path: ~/Documents/Obsidian Vault
+vector:
+  enabled: true
+  provider: neo4j
+graph:
+  enabled: true
+  uri: bolt://127.0.0.1:7687
+```
 
 ## Grok Build
 
@@ -39,17 +52,16 @@ bash scripts/setup-hermes.sh
 hermes mcp test vault_memory
 ```
 
-## Docker modes
+## Docker
 
-| Mode | Command |
-|------|---------|
-| **unified** (default) | `docker compose -f docker/docker-compose.yml --profile unified up -d` |
-| **separate** | `bash scripts/docker-up.sh separate` |
+```bash
+docker compose -f docker/docker-compose.yml --profile unified up -d
+```
 
-Set `docker.mode` in config; AI can change via `update_config` MCP tool.
+Only Neo4j starts. Remove legacy Qdrant if still present: `docker rm -f qdrant`.
 
 ## Verify
 
-Call MCP tool `health_check`. All three should be healthy: vault path, qdrant, neo4j.
+Call MCP `health_check`. Expect: vault path OK, `store: neo4j`, graph + vector OK.
 
-Then call `sync_vault` once to index notes.
+Then `sync_vault force=true` once to index notes.

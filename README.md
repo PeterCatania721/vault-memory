@@ -1,29 +1,36 @@
 # vault-memory
 
-[![Status](https://img.shields.io/badge/status-stable%20(v0.1.2)-green)](STATUS.md)
-[![Tests](https://img.shields.io/badge/tests-63%2F63%20passing-brightgreen)](STATUS.md)
+[![Status](https://img.shields.io/badge/status-stable%20(v0.2.1)-green)](STATUS.md)
+[![Tests](https://img.shields.io/badge/tests-70%2F70%20passing-brightgreen)](STATUS.md)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-Cross-agent plugin for **Obsidian + Qdrant + Neo4j** memory. Works with **Grok Build**, **Claude Code**, and **Hermes Agent**.
+Cross-agent plugin for **Obsidian + Neo4j** memory (graph + vector embeddings + provenance). Works with **Grok Build**, **Claude Code**, and **Hermes Agent**.
 
-Built from patterns engineers use successfully: markdown vault as source of truth, local embeddings, Docker-pinned databases, MCP stdio, incremental sync.
+Built from patterns engineers use successfully: markdown vault as source of truth, local embeddings, single Docker database, MCP stdio, incremental sync.
 
-> **Current status:** v0.1.2 — 18 MCP tools, curator + correction, [full details in STATUS.md](STATUS.md).
+> **Current status:** v0.2.1 — Neo4j-only, provenance GraphRAG, 24 MCP tools, [full details in STATUS.md](STATUS.md).
 
 ## Architecture
 
 ```
-Obsidian vault (.md)
+Obsidian vault (.md) — source of truth + YAML provenance on Memory/ notes
        │
        ├─► Keyword search (filesystem)
-       ├─► Qdrant (semantic chunks + embeddings)
-       └─► Neo4j (Note nodes, LINKS_TO from [[wikilinks]])
-              │
-              ▼
-        vault-memory MCP (stdio)
-              │
-    Grok / Claude Code / Hermes
+       └─► Neo4j (single store)
+              ├─► :Note + LINKS_TO (wikilinks)
+              ├─► :Chunk + vector index (semantic search)
+              ├─► :Verification + embeddings (test evidence)
+              └─► :Fact → :Source → :TestRun (provenance graph)
+                     │
+                     ▼
+              vault-memory MCP (stdio)
+                     │
+           Grok / Claude Code / Hermes
 ```
+
+### Why Neo4j-only (v0.2+)
+
+v0.1.x used **Qdrant + Neo4j** (2 Docker containers, dual sync/prune). v0.2+ consolidates vectors and graph in Neo4j for simpler ops and native GraphRAG (`search_vault_hybrid`). Qdrant is no longer required. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
 
 ## Quick start
 
@@ -32,61 +39,57 @@ git clone https://github.com/PeterCatania721/vault-memory.git
 cd vault-memory
 bash scripts/install.sh
 bash scripts/docker-up.sh
-# Edit ~/.vault-memory/config.yaml → set vault.path
+# Edit ~/.vault-memory/config.yaml → set vault.path, vector.provider: neo4j
 grok plugin install . --trust   # or Claude /plugin local path
 ```
 
-## MCP tools
+## MCP tools (highlights)
 
 | Tool | Purpose |
 |------|---------|
-| `health_check` | Vault + DB status |
-| `get_config` / `update_config` | AI-driven configuration |
-| `list_vault_notes` / `read_vault_note` | Direct vault access |
-| `search_vault_keyword` | FTS-style search |
-| `search_vault_semantic` | Qdrant vector search |
-| `graph_neighbors` / `graph_query` | Neo4j wikilink graph |
+| `health_check` | Vault + Neo4j status |
+| `search_vault_hybrid` | **Default** — semantic + graph + provenance |
+| `search_vault_semantic` | Neo4j vector search on chunks |
+| `provenance_trail` / `query_stale_facts` | Audit sources and stale facts |
+| `add_research_memory` | Write provenance-structured Memory/ note |
+| `graph_neighbors` / `graph_query` | Wikilink graph + Cypher |
 | `sync_vault` | Index / reindex |
+| `run_curator` | Rule-based archive (spoil + verified_in) |
+
+Full list in [STATUS.md](STATUS.md).
 
 ## Docker
 
-**Unified** (default): both DBs in one compose file.
+**One container** — Neo4j 5.26 (graph + vector indexes):
 
 ```bash
 docker compose -f docker/docker-compose.yml --profile unified up -d
 ```
 
-**Separate**: one container per DB (easier independent updates).
-
-```bash
-docker compose -f docker/docker-compose.separate.yml --profile vector up -d
-docker compose -f docker/docker-compose.separate.yml --profile graph up -d
-```
-
-Set `docker.mode: unified|separate` in config.
+Legacy Qdrant is not used. If an old `qdrant` container is still running, stop and remove it.
 
 ## Pinned versions
 
 | Component | Version |
 |-----------|---------|
-| Qdrant | v1.12.5 |
 | Neo4j | 5.26.0-community |
-| qdrant-client | 1.12.1 |
 | neo4j (Python) | 5.26.0 |
 | sentence-transformers | 3.3.1 |
+| vault-memory-mcp | 0.2.1 |
 
 ## Tests (Elon loop)
 
 ```bash
 bash scripts/test-cycle.sh          # unit tests, retry until green
-pytest -m integration             # needs Docker
+pytest -m integration                 # needs Docker (Neo4j only)
 ```
 
 ## Skills
 
 - `vault-memory-setup` — install, Docker, config
 - `vault-memory-sync` — index vault
-- `vault-memory-query` — search + graph
+- `vault-memory-query` — hybrid search + graph
+- `vault-memory-curator` — rule-based maintenance
 
 ## License
 

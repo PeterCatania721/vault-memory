@@ -3,20 +3,26 @@
 ## Stack (only proven patterns)
 
 - Obsidian vault = markdown on disk (no proprietary API)
-- Qdrant v1.12.5 for vectors
-- Neo4j 5.26 for wikilink graph
-- sentence-transformers/all-MiniLM-L6-v2 local embeddings
+- **Neo4j 5.26** — wikilinks, chunk embeddings, verification embeddings, provenance graph
+- sentence-transformers/all-MiniLM-L6-v2 local embeddings (stored on Neo4j nodes)
 - MCP stdio child process (no network MCP for local data)
+- **Qdrant removed in v0.2+** — do not add back without explicit user request
 
 ## Software 3.0 (Karpathy)
 
 Agents may **configure the system in natural language**:
 
 1. `get_config` → understand current state
-2. `update_config` → change vault path, DB URLs, chunk size
+2. `update_config` → change vault path, Neo4j URI, chunk size
 3. `sync_vault` → apply changes
 
 Never hand-edit Docker images without pinning versions in `docker/`.
+
+## Default retrieval
+
+1. `search_vault_hybrid` (not semantic alone)
+2. `provenance_trail` when citing numbers or sources
+3. `graph_neighbors` for related notes
 
 ## Development
 
@@ -25,7 +31,7 @@ git worktree add ../vault-memory-feature my-branch
 bash scripts/test-cycle.sh
 ```
 
-Unit tests: no Docker. Integration: `pytest -m integration` (needs Docker).
+Unit tests: no Docker. Integration: `pytest -m integration` (needs Neo4j Docker).
 
 ## Cross-agent paths
 

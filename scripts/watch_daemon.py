@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Background vault watcher — incremental sync to Qdrant + Neo4j (vault-memory)."""
+"""Background vault watcher — incremental sync to Neo4j (vault-memory)."""
 
 from __future__ import annotations
 

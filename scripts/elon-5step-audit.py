@@ -144,7 +144,7 @@ def step5_automate(sync: VaultSync, cfg) -> dict:
     if not services_healthy():
         ensure_docker_services(ROOT)
     if not services_healthy():
-        findings.append("Qdrant/Neo4j not healthy — automation cannot run")
+        findings.append("Neo4j not healthy — automation cannot run")
 
     preview = curator.run(dry_run=True)
     lab_protected = all(

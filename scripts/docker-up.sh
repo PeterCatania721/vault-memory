@@ -11,11 +11,10 @@ if [[ -f "${HOME}/.vault-memory/config.yaml" ]]; then
 fi
 
 if [[ "${MODE}" == "separate" ]]; then
-  docker compose -f docker-compose.separate.yml --profile vector up -d
   docker compose -f docker-compose.separate.yml --profile graph up -d
 else
   docker compose --profile unified up -d
 fi
 
-echo "Qdrant: http://127.0.0.1:${QDRANT_PORT:-6333}"
-echo "Neo4j:  bolt://127.0.0.1:${NEO4J_BOLT_PORT:-7687}"
+echo "Neo4j: bolt://127.0.0.1:${NEO4J_BOLT_PORT:-7687} (graph + vectors)"
+echo "Note: Qdrant removed in v0.2+ — Neo4j-only stack"

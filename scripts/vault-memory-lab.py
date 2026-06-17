@@ -98,7 +98,7 @@ def run_tasks() -> list[dict]:
         1,
         "Health baseline + find know-how",
         "\n".join(knowhow_snippets) or "- No semantic hits; used filesystem listing.",
-        "- `health_check` / VaultSync.health()\n- Qdrant + Neo4j running\n- Obsidian vault path",
+        "- `health_check` / VaultSync.health()\n- Neo4j running (graph + vectors)\n- Obsidian vault path",
     )
     body1 += f"""
 ```bash
@@ -153,7 +153,7 @@ Semantic search on indexed `Memory/` notes returns setup know-how in <2s. Start 
 - top hit: {kw[0]['path'] if kw else 'none'}
 
 ## 5. What works
-Use keyword search for proper nouns (Hermes, Qdrant, MCP). Use semantic for concepts.
+Use keyword search for proper nouns (Hermes, Neo4j, MCP). Use hybrid search for concepts.
 """
     write_note(vault, f"{LAB_DIR}/task-03-keyword-search.md", body3)
     results.append(_ok(3, "keyword-search", f"{len(kw)} keyword hits", {"paths": kw_paths}))
@@ -226,7 +226,7 @@ After `sync_vault`, `graph_neighbors` expands context beyond single-note retriev
         6,
         "Sync + verify index",
         "Ran `sync_vault force=true` after writing lab notes.",
-        "- `sync_vault`\n- Qdrant collection",
+        "- `sync_vault`\n- Neo4j chunk embeddings",
     )
     body6 += f"""
 ## 4. Test result
