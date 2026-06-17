@@ -76,7 +76,7 @@ Legacy Qdrant is not used. If an old `qdrant` container is still running, stop a
 | Neo4j | 5.26.0-community |
 | neo4j (Python) | 5.26.0 |
 | sentence-transformers | 3.3.1 |
-| vault-memory-mcp | 0.2.4 |
+| vault-memory-mcp | 0.2.5 |
 
 ## Tests (Elon loop)
 
