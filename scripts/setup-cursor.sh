@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
-# Install vault-memory for Cursor IDE (MCP + optional local plugin symlink).
+# Install vault-memory for Cursor IDE (global MCP + optional local plugin symlink).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CURSOR_PLUGINS="${HOME}/.cursor/plugins/local"
+CURSOR_GLOBAL_MCP="${HOME}/.cursor/mcp.json"
+UV_BIN="$(command -v uv)"
 
 echo "==> vault-memory Cursor setup"
 
 bash "${ROOT}/scripts/install.sh"
 bash "${ROOT}/scripts/docker-up.sh"
 
-mkdir -p "${CURSOR_PLUGINS}"
+mkdir -p "${CURSOR_PLUGINS}" "${HOME}/.cursor"
 TARGET="${CURSOR_PLUGINS}/vault-memory"
 if [[ -L "${TARGET}" ]]; then
   rm "${TARGET}"
@@ -23,12 +25,30 @@ if [[ -n "${TARGET}" ]]; then
   echo "Linked plugin: ${TARGET} -> ${ROOT}"
 fi
 
+# Global MCP — active in every Cursor workspace on this machine
+cat > "${CURSOR_GLOBAL_MCP}" <<EOF
+{
+  "mcpServers": {
+    "vault-memory": {
+      "command": "${UV_BIN}",
+      "args": [
+        "run",
+        "--directory",
+        "${ROOT}/mcp-server",
+        "vault-memory-mcp"
+      ],
+      "env": {
+        "VAULT_MEMORY_CONFIG": "${HOME}/.vault-memory/config.yaml",
+        "PATH": "${HOME}/.local/bin:/usr/local/bin:/usr/bin:/bin"
+      }
+    }
+  }
+}
+EOF
+echo "Wrote global MCP config: ${CURSOR_GLOBAL_MCP}"
+
 echo ""
-echo "Cursor MCP: ${ROOT}/.cursor/mcp.json (uses \${workspaceFolder})"
-echo "1. Open this folder in Cursor: ${ROOT}"
-echo "2. Restart Cursor (or reload window)"
-echo "3. Settings → Tools & MCP → enable vault-memory"
-echo "4. In Agent chat: health_check → sync_vault force=true"
-echo ""
-echo "Global MCP (all projects): copy .cursor/mcp.json to ~/.cursor/mcp.json"
-echo "  and replace \${workspaceFolder} with: ${ROOT}"
+echo "Project MCP also available: ${ROOT}/.cursor/mcp.json"
+echo "1. Restart Cursor (or reload window)"
+echo "2. Settings → Tools & MCP → enable vault-memory"
+echo "3. In Agent chat: health_check → sync_vault force=true"
