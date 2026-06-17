@@ -36,7 +36,11 @@ PROTECT_FRONTMATTER = re.compile(
     re.IGNORECASE,
 )
 SUCCESS_FRONTMATTER = re.compile(
-    r"(?:^|\n)status\s*:\s*success\b|(?:^|\n)type\s*:\s*(?:playbook|test-recipe|verification)\b",
+    r"(?:^|\n)status\s*:\s*success\b|(?:^|\n)type\s*:\s*(?:playbook|test-recipe|verification|solution)\b",
+    re.IGNORECASE,
+)
+ANTI_PATTERN_FRONTMATTER = re.compile(
+    r"(?:^|\n)type\s*:\s*anti-pattern\b",
     re.IGNORECASE,
 )
 PROTECT_TAGS = re.compile(
@@ -390,6 +394,13 @@ class VaultCurator:
     ) -> CuratorAction:
         rel = note.path
 
+        if (
+            ANTI_PATTERN_FRONTMATTER.search(note.content)
+            or rel.startswith("Memory/Agent/Solutions/")
+            or rel.startswith("Memory/Agent/Anti-Patterns/")
+        ):
+            return CuratorAction(rel, "protected", "agent solution or anti-pattern memory", 1)
+
         # Step 2 first — actively remove false / expired / spoiled data
         if self._is_invalid(note):
             reason = "status invalid / validated false / non-functional marker"
@@ -574,7 +585,8 @@ class VaultCurator:
         summary = prefix + ", ".join(summary_parts)
 
         report_path = self._write_report(result, summary)
-        self._write_curator_log(result, summary, dry_run=dry_run)
+        if not dry_run:
+            self._write_curator_log(result, summary, dry_run=False)
         if not dry_run:
             state = self.load_state()
             state["last_run_at"] = start.isoformat()

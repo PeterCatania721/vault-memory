@@ -55,10 +55,13 @@ class VaultSync:
         self.state_dir.mkdir(parents=True, exist_ok=True)
         self.state_path.write_text(json.dumps(state, indent=2))
 
-    def run(self, force: bool = False) -> SyncResult:
+    def run(self, force: bool = False, *, require_vault: bool = True) -> SyncResult:
         vault = self.config.vault.path
         if not vault.exists():
-            raise FileNotFoundError(f"Vault not found: {vault}")
+            message = f"Vault not found: {vault}"
+            if require_vault:
+                raise FileNotFoundError(message)
+            return SyncResult(indexed=0, skipped=0, pruned=0, errors=[message])
 
         state = {} if force else self._load_state()
         indexed = 0
@@ -111,11 +114,19 @@ class VaultSync:
         return SyncResult(indexed=indexed, skipped=skipped, pruned=pruned, errors=errors)
 
     def health(self) -> dict[str, Any]:
+        from .resilience import vault_status
+
+        vs = vault_status(self.config)
         result: dict[str, Any] = {
-            "vault": str(self.config.vault.path),
-            "vault_exists": self.config.vault.path.exists(),
+            "vault": vs["path"],
+            "vault_exists": vs["exists"],
+            "vault_writable": vs["writable"],
             "store": "neo4j",
         }
+        if not vs["exists"]:
+            result["hint"] = (
+                "Run scripts/install.sh or set vault.path in ~/.vault-memory/config.yaml"
+            )
         if self.graph:
             graph_health = self.graph.health()
             result["graph"] = graph_health

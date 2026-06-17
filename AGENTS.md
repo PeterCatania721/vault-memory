@@ -20,9 +20,16 @@ Never hand-edit Docker images without pinning versions in `docker/`.
 
 ## Default retrieval
 
-1. `search_vault_hybrid` (not semantic alone)
-2. `provenance_trail` when citing numbers or sources
-3. `graph_neighbors` for related notes
+1. `query_agent_guidance` — before agentic tasks (solutions + anti-patterns)
+2. `search_vault_hybrid` — general retrieval
+3. `provenance_trail` when citing numbers or sources
+4. `graph_neighbors` for related notes
+
+## Agent memory write
+
+After task execution, use `add_agent_memory`:
+- `memory_type: solution` + `verified_in` with command/cwd/exit_code on success
+- `memory_type: anti-pattern` + failure recreation metadata on failure cases A–F
 
 ## Development
 

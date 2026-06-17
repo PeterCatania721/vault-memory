@@ -11,7 +11,7 @@ from mcp.server.fastmcp import FastMCP
 from .config import AppConfig, load_config, save_config
 from .curator import VaultCurator
 from .obsidian import keyword_search, list_notes, read_note
-from .obsidian import read_note
+from .agent_memory import query_agent_guidance as run_agent_guidance, write_agent_memory
 from .provenance import (
     ProvenanceStore,
     build_research_frontmatter,
@@ -94,7 +94,7 @@ def update_config(updates_json: str) -> str:
         os.path.expanduser(data["vault"]["path"])
     ).resolve()
     cfg.vault.ignore = data["vault"].get("ignore", cfg.vault.ignore)
-    for field in ("enabled", "url", "collection", "embedding_model", "chunk_size", "chunk_overlap"):
+    for field in ("enabled", "embedding_model", "chunk_size", "chunk_overlap", "provider"):
         if field in data.get("vector", {}):
             setattr(cfg.vector, field, data["vector"][field])
     for field in ("enabled", "uri", "user", "password", "database"):
@@ -239,6 +239,89 @@ def add_research_memory(
 
 
 @mcp.tool()
+def add_agent_memory(
+    title: str,
+    body: str,
+    memory_type: str,
+    source: str,
+    verification_json: str = "[]",
+    contradicts_json: str = "[]",
+    task_id: str = "",
+    confidence: float = 0.85,
+) -> str:
+    """Write agentic task memory: solution (success), anti-pattern (failure to avoid), or lesson.
+
+    Concrete recreation metadata (command, cwd, exit_code, expected, actual) goes in
+    verification_json. Neo4j stores TestRun nodes; Obsidian stores abstract prose.
+    memory_type: solution | anti-pattern | lesson
+    """
+    cfg = _get_config()
+    sync = _get_sync()
+    verified = json.loads(verification_json) if verification_json.strip() else []
+    contradicts = json.loads(contradicts_json) if contradicts_json.strip() else []
+    try:
+        rel, fm, issues = write_agent_memory(
+            cfg.vault.path,
+            memory_type=memory_type.strip().lower(),
+            title=title,
+            body=body,
+            source=source,
+            verified_in=verified,
+            contradicts=contradicts,
+            task_id=task_id,
+            confidence=confidence,
+        )
+    except ValueError as exc:
+        return json.dumps({"ok": False, "error": str(exc)})
+    if issues:
+        return json.dumps({"ok": False, "issues": issues})
+    if not rel:
+        return json.dumps({"ok": False, "issues": issues or ["write failed"]})
+    prov = {"ok": False}
+    curator_preview: dict[str, Any] | None = None
+    if sync.graph:
+        store = ProvenanceStore(sync.graph, cfg.vault.path)
+        prov = store.upsert_from_note(rel)
+        sync.run(force=False)
+        curator_preview = _get_curator().run(dry_run=True).to_dict()
+    return json.dumps(
+        {
+            "ok": True,
+            "path": rel,
+            "memory_type": memory_type,
+            "abstraction_layer": fm.get("abstraction_layer"),
+            "provenance": prov,
+            "curator_preview": curator_preview,
+        },
+        indent=2,
+    )
+
+
+@mcp.tool()
+def query_agent_guidance(query: str, limit: int = 5, depth: int = 2) -> str:
+    """Optimized agentic retrieval: solutions to apply, anti-patterns to avoid, abstract lessons.
+
+    Ranks by agent_score (success-boosted semantic). Concrete failures from Neo4j TestRun;
+    abstract guidance from Obsidian Memory/Agent/ notes.
+    """
+    sync = _get_sync()
+    if not sync.graph:
+        return json.dumps({"error": "Graph store disabled in config"})
+    result = run_agent_guidance(
+        sync.graph,
+        _get_config().vault.path,
+        query,
+        limit=limit,
+        depth=depth,
+    )
+    for bucket in ("solutions", "anti_patterns", "lessons"):
+        for hit in result.get(bucket, []):
+            if hit.get("path"):
+                _record_usage(hit["path"], "agent_guidance")
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
 def provenance_trail(path: str, depth: int = 2) -> str:
     """Return Fact → Source → TestRun chain for a vault note."""
     sync = _get_sync()
@@ -258,19 +341,6 @@ def query_stale_facts(days: int = 90, source_type: str = "") -> str:
     st = source_type.strip() or None
     rows = store.query_unverified_stale(days=days, source_type=st)
     return json.dumps({"days": days, "source_type": st, "facts": rows}, indent=2)
-
-
-@mcp.tool()
-def search_vault_graphrag(query: str, limit: int = 5, depth: int = 2) -> str:
-    """GraphRAG: Neo4j vector search + wikilink graph context expansion."""
-    sync = _get_sync()
-    if not sync.graph:
-        return json.dumps({"error": "Graph store disabled in config"})
-    hits = sync.graph.search_with_graph_context(query, limit=limit, depth=depth)
-    for hit in hits:
-        if hit.get("path"):
-            _record_usage(hit["path"], "graphrag_search")
-    return json.dumps({"query": query, "results": hits}, indent=2)
 
 
 @mcp.tool()

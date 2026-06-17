@@ -143,8 +143,8 @@ def test_mcp_tools_with_live_backends(integration_config, tmp_path, reset_server
     semantic = json.loads(srv.search_vault_semantic("vector database", limit=2))
     assert semantic.get("results")
 
-    graphrag = json.loads(srv.search_vault_graphrag("vector database", limit=2))
-    assert graphrag.get("results")
+    hybrid = json.loads(srv.search_vault_hybrid("vector database", limit=2))
+    assert hybrid.get("results")
 
     neighbors = json.loads(srv.graph_neighbors("project-alpha.md"))
     assert neighbors.get("neighbors") is not None
@@ -218,3 +218,133 @@ def test_provenance_graph_chain(integration_config):
             note_path.unlink()
         sync.graph.delete_note(rel)
         sync.close()
+
+
+def test_agent_memory_graph_chain(integration_config):
+    """Solution + anti-pattern notes materialize concrete TestRun nodes in Neo4j."""
+    from vault_memory_mcp.agent_memory import query_agent_guidance, write_agent_memory
+    from vault_memory_mcp.provenance import ProvenanceStore
+
+    sync = VaultSync(integration_config)
+    vault = integration_config.vault.path
+    paths: list[str] = []
+    try:
+        sol_rel, _, _ = write_agent_memory(
+            vault,
+            memory_type="solution",
+            title="Neo4j Docker Cloud",
+            body="Start dockerd with --storage-driver=vfs when iptables fails.",
+            source="internal://cloud-agent-test",
+            verified_in=[
+                {
+                    "test_id": "case-a-docker-vfs",
+                    "date": "2026-06-17",
+                    "outcome": "success",
+                    "command": "dockerd --iptables=false --storage-driver=vfs",
+                    "cwd": "/workspace",
+                    "exit_code": 0,
+                    "system": "cloud-vm",
+                }
+            ],
+        )
+        paths.append(sol_rel)
+
+        fail_rel, _, _ = write_agent_memory(
+            vault,
+            memory_type="anti-pattern",
+            title="Docker Default Bridge Fails",
+            body="Avoid default dockerd on cloud VMs without iptables NAT support.",
+            source="internal://cloud-agent-test",
+            verified_in=[
+                {
+                    "test_id": "case-b-iptables",
+                    "date": "2026-06-17",
+                    "outcome": "failure",
+                    "command": "dockerd",
+                    "cwd": "/workspace",
+                    "exit_code": 1,
+                    "actual": "iptables TABLE_ADD failed",
+                    "expected": "daemon running",
+                    "system": "cloud-vm",
+                }
+            ],
+        )
+        paths.append(fail_rel)
+
+        sync.run(force=True)
+        store = ProvenanceStore(sync.graph, vault)
+
+        sol_trail = store.provenance_trail(sol_rel)
+        assert sol_trail["found"] is True
+        assert any(t.get("outcome") == "success" for t in sol_trail.get("tests") or [])
+
+        fail_trail = store.provenance_trail(fail_rel)
+        assert fail_trail["found"] is True
+        assert any(t.get("outcome") == "failure" for t in fail_trail.get("tests") or [])
+
+        rows = sync.graph.query_readonly(
+            """
+            MATCH (f:Fact)-[:VERIFIED_IN]->(t:TestRun {id: 'case-a-docker-vfs'})
+            RETURN t.command AS command, t.cwd AS cwd, t.exit_code AS exit_code
+            """
+        )
+        assert rows[0]["command"] == "dockerd --iptables=false --storage-driver=vfs"
+        assert rows[0]["exit_code"] == 0
+
+        guidance = query_agent_guidance(sync.graph, vault, "docker neo4j cloud setup", limit=5)
+        assert guidance["solutions"] or guidance["anti_patterns"]
+    finally:
+        for rel in paths:
+            note_path = vault / rel
+            if note_path.exists():
+                note_path.unlink()
+            sync.graph.delete_note(rel)
+        sync.close()
+
+
+def test_mcp_add_agent_memory(integration_config, tmp_path, reset_server_globals):
+    import vault_memory_mcp.server as srv
+
+    state_dir = tmp_path / "agent-mcp-state"
+    os.environ["VAULT_MEMORY_CONFIG"] = str(integration_config.config_path)
+    os.environ["VAULT_MEMORY_STATE_DIR"] = str(state_dir)
+    srv._config = None
+    srv._sync = None
+
+    verification = json.dumps(
+        [
+            {
+                "test_id": "mcp-agent-it",
+                "date": "2026-06-17",
+                "outcome": "success",
+                "command": "pytest -m integration",
+                "cwd": "/workspace",
+                "exit_code": 0,
+            }
+        ]
+    )
+    out = json.loads(
+        srv.add_agent_memory(
+            title="MCP Agent Memory Test",
+            body="Integration test for add_agent_memory tool.",
+            memory_type="solution",
+            source="internal://mcp-it",
+            verification_json=verification,
+        )
+    )
+    assert out["ok"] is True
+    assert "Memory/Agent/Solutions/" in out["path"]
+
+    guidance = json.loads(srv.query_agent_guidance("MCP agent memory", limit=3))
+    assert "solutions" in guidance
+
+    if out.get("path"):
+        note_path = integration_config.vault.path / out["path"]
+        if note_path.exists():
+            note_path.unlink()
+        if srv._sync and srv._sync.graph:
+            srv._sync.graph.delete_note(out["path"])
+
+    if srv._sync:
+        srv._sync.close()
+        srv._sync = None

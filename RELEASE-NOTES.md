@@ -1,5 +1,38 @@
 # Release notes
 
+## 0.2.5 — 2026-06-17
+
+- **Resilience:** `resilience.py` bootstraps `~/.vault-memory/vault`, falls back to repo fixtures for audit/CI
+- `install.sh` auto-creates vault + welcome note when path missing
+- `elon-5step-audit.py` no longer crashes on missing Obsidian path; reports to vault or `~/.vault-memory/reports/`
+- `VaultSync.run(require_vault=False)` soft-fail; `health_check` includes `hint` when vault missing
+- `session-check.sh` uses bootstrap; curator dry-run skips vault log writes (already in 0.2.4)
+- Default config vault path: `~/.vault-memory/vault` (was `~/Documents/Obsidian/MyVault`)
+
+## 0.2.4 — 2026-06-17 (Elon algorithm pass)
+
+**01 Less dumb requirements:** `add_agent_memory` enforces recreation metadata (`command`, `cwd`, `exit_code`) for solutions and anti-patterns.
+
+**02 Delete:** Removed `search_vault_graphrag` (use `search_vault_hybrid`), dead `:Verification` index, Qdrant migration to `scripts/archive/`, `docker-compose.separate.yml`, deprecated `vector.url`/`collection`.
+
+**03 Optimize:** CPU-only PyTorch pin; semantic ranking for failure `TestRun` nodes; renamed MCP tool `query_agent_guidance` (dropped `_tool` suffix).
+
+**04 Accelerate:** `docker-up.sh` auto-starts dockerd on restricted cloud VMs (`vfs` + no iptables).
+
+**05 Automate:** Curator skips vault log writes on dry-run; protects only `Solutions/` + `Anti-Patterns/` (lessons can age out).
+
+- Policy stubs shipped in test fixtures: `Long-Term-Memory-Policy`, `Test-Memory-Recreation-Policy`
+- **25 MCP tools** (was 26)
+- Common-error tests: invalid memory_type, missing recreation, wrong outcome, curator agent paths
+
+## 0.2.3 — 2026-06-17
+
+- **Agentic memory layer** — two-tier architecture: concrete Neo4j (`TestRun` with command/cwd/exit_code) + abstract Obsidian (`Memory/Agent/Solutions|Anti-Patterns|Lessons`)
+- MCP: `add_agent_memory`, `query_agent_guidance` (success-boosted ranking, failure anti-patterns)
+- TestRun nodes store full recreation metadata from `verified_in`
+- Curator protects `Memory/Agent/**` and anti-pattern notes
+- Cloud-tested with Docker Neo4j (81 tests pass)
+
 ## 0.2.2 — 2026-06-17
 
 - Fix `provenance_trail` returning `found: false` when note YAML has `verified_in` but Neo4j Fact chain was never materialized

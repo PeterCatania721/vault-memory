@@ -2,7 +2,7 @@
 # Copy to ~/.vault-memory/config.yaml or set VAULT_MEMORY_CONFIG to your path.
 
 vault:
-  path: ~/Documents/Obsidian/MyVault
+  path: ~/.vault-memory/vault
   ignore:
     - ".obsidian/**"
     - ".trash/**"
@@ -42,6 +42,8 @@ curator:
     - "playbooks/**"
     - "tests/success/**"
     - "**/test-recipe*.md"
+    - "Memory/Agent/Solutions/**"
+    - "Memory/Agent/Anti-Patterns/**"
   protect_tags:
     - pinned
     - test-success

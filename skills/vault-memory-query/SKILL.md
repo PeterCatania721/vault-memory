@@ -1,9 +1,9 @@
 ---
 name: vault-memory-query
 description: >
-  Query Obsidian vault memory via hybrid GraphRAG, provenance trails, or Neo4j graph.
-  Use when user asks about past notes, decisions, linked concepts, or "what did I write about X".
-  Triggers on search vault, find in obsidian, knowledge graph, related notes.
+  Query Obsidian vault memory via hybrid GraphRAG, agent guidance, provenance trails, or Neo4j graph.
+  Use when user asks about past notes, decisions, linked concepts, task execution, or "what did I write about X".
+  Triggers on search vault, find in obsidian, knowledge graph, related notes, what to avoid, successful solution.
 ---
 
 # vault-memory Query
@@ -12,6 +12,7 @@ description: >
 
 | Need | MCP tool |
 |------|----------|
+| **Agent task execution** | `query_agent_guidance` |
 | **Default retrieval** | `search_vault_hybrid` |
 | Provenance audit chain | `provenance_trail` |
 | Stale/unverified facts | `query_stale_facts` |
@@ -21,6 +22,22 @@ description: >
 | Related notes | `graph_neighbors` |
 | Custom graph query | `graph_query` (read-only Cypher) |
 | Write research | `add_research_memory` |
+| Write agent memory | `add_agent_memory` |
+
+## Two-tier memory (agentic systems)
+
+| Layer | Store | Content |
+|-------|-------|---------|
+| Concrete | Neo4j `:TestRun` | command, cwd, exit_code, expected, actual, outcome |
+| Abstract | Obsidian `Memory/Agent/` | Solutions, anti-patterns, lessons |
+
+## Recommended agent flow
+
+1. **Before task:** `query_agent_guidance` — solutions + anti-patterns ranked by `agent_score`
+2. **During:** `search_vault_hybrid` for broader context
+3. **After success:** `add_agent_memory` with `memory_type: solution` + `verified_in` recreation metadata
+4. **After failure:** `add_agent_memory` with `memory_type: anti-pattern` + failure cases
+5. `provenance_trail` when citing numbers or sources
 
 ## Recommended flow (hybrid default)
 
@@ -28,7 +45,6 @@ description: >
 2. `provenance_trail` on best hit when citing numbers or sources
 3. `graph_neighbors` for related context
 4. `read_vault_note` for full text when drafting answer
-5. Cross-check Hermes built-in `memory` for compact facts
 
 ## Example graph queries
 

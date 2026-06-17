@@ -40,7 +40,7 @@ def _attempt(n: int, cfg, sync: VaultSync, curator: VaultCurator) -> dict:
     write_note(
         vault,
         false_rel,
-        f"# False claim {n}\n\nQdrant runs on port {token}.\n",
+        f"# False claim {n}\n\nNeo4j runs on port {token}.\n",
     )
     sync.run(force=False)
     kw_before = keyword_search(vault, token, cfg.vault.ignore, limit=5)
@@ -62,7 +62,7 @@ def _attempt(n: int, cfg, sync: VaultSync, curator: VaultCurator) -> dict:
         vault,
         valid_rel,
         f"---\nstatus: success\ntype: verification\n---\n\n"
-        f"# Verified fact {n}\n\nQdrant runs on port {good_token}.\n",
+        f"# Verified fact {n}\n\nNeo4j runs on port {good_token}.\n",
     )
     sync.run(force=True)
     kw_good = keyword_search(vault, good_token, cfg.vault.ignore, limit=5)

@@ -180,7 +180,9 @@ class ProvenanceStore:
                     f.confidence = $confidence,
                     f.spoil_after_days = $spoil_days,
                     f.summary = $title,
-                    f.last_verified = $last_verified
+                    f.last_verified = $last_verified,
+                    f.memory_type = $memory_type,
+                    f.abstraction_layer = $abstraction_layer
                 MERGE (n)-[:DOCUMENTS]->(f)
                 MERGE (f)-[:SOURCED_FROM]->(s)
                 MERGE (f)-[r:SPOIL_AFTER]->(p:SpoilPolicy {days: $spoil_days})
@@ -196,6 +198,8 @@ class ProvenanceStore:
                 fact_id=fact_id,
                 confidence=float(fm.get("confidence", 0.5)),
                 spoil_days=spoil_days,
+                memory_type=str(fm.get("type", "")),
+                abstraction_layer=str(fm.get("abstraction_layer", "abstract")),
             )
 
             for entry in verified if isinstance(verified, list) else []:
@@ -213,7 +217,14 @@ class ProvenanceStore:
                     SET t.date = $date,
                         t.outcome = $outcome,
                         t.software_version = $version,
-                        t.system = $system
+                        t.system = $system,
+                        t.command = $command,
+                        t.cwd = $cwd,
+                        t.exit_code = $exit_code,
+                        t.expected = $expected,
+                        t.actual = $actual,
+                        t.git_commit = $git_commit,
+                        t.containers = $containers
                     MERGE (f)-[:VERIFIED_IN]->(t)
                     WITH t, $version AS ver, $system AS sys
                     FOREACH (_ IN CASE WHEN ver <> '' THEN [1] ELSE [] END |
@@ -229,6 +240,13 @@ class ProvenanceStore:
                     outcome=str(entry.get("outcome", "")),
                     version=version,
                     system=system,
+                    command=str(entry.get("command") or ""),
+                    cwd=str(entry.get("cwd") or ""),
+                    exit_code=entry.get("exit_code"),
+                    expected=str(entry.get("expected") or ""),
+                    actual=str(entry.get("actual") or ""),
+                    git_commit=str(entry.get("git_commit") or ""),
+                    containers=json.dumps(entry.get("containers") or []),
                 )
 
             for raw in fm.get("related_to") or []:

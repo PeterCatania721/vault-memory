@@ -96,3 +96,9 @@ def test_plugin_version_consistent():
     from vault_memory_mcp import __version__
 
     assert __version__ == pkg_version
+
+
+def test_deprecated_files_removed():
+    assert not (ROOT / "docker/docker-compose.separate.yml").exists()
+    assert (ROOT / "scripts/archive/migrate-qdrant-to-neo4j.py").exists()
+    assert not (ROOT / "scripts/migrate-qdrant-to-neo4j.py").exists()
