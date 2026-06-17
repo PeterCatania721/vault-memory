@@ -53,6 +53,7 @@ Never leave the repo out of sync with the code.
 
 | Agent | Plugin install | MCP config |
 |-------|----------------|------------|
+| **Cursor** | `bash scripts/setup-cursor.sh` | `.cursor/mcp.json` (project) or `~/.cursor/mcp.json` |
 | Grok Build | `grok plugin install . --trust` | `.mcp.json` auto |
 | Claude Code | `/plugin` local path | `.mcp.json` auto |
 | Hermes | `scripts/setup-hermes.sh` | `~/.hermes/config.yaml` |

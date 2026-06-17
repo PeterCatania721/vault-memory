@@ -18,6 +18,8 @@ ROOT = Path(__file__).resolve().parents[1]
     "rel",
     [
         ".mcp.json",
+        ".cursor/mcp.json",
+        ".cursor-plugin/plugin.json",
         ".grok-plugin/plugin.json",
         ".claude-plugin/plugin.json",
         "hooks/hooks.json",
@@ -25,6 +27,7 @@ ROOT = Path(__file__).resolve().parents[1]
         "scripts/install.sh",
         "scripts/test-cycle.sh",
         "scripts/docker-up.sh",
+        "scripts/setup-cursor.sh",
         "scripts/curator-run.sh",
         "scripts/watch_daemon.py",
         "skills/vault-memory-setup/SKILL.md",
@@ -37,6 +40,14 @@ ROOT = Path(__file__).resolve().parents[1]
 )
 def test_required_plugin_files_exist(rel: str):
     assert (ROOT / rel).exists(), f"missing {rel}"
+
+
+def test_cursor_mcp_json_points_at_mcp_server():
+    data = json.loads((ROOT / ".cursor/mcp.json").read_text())
+    srv = data["mcpServers"]["vault-memory"]
+    assert srv["command"] == "uv"
+    assert "vault-memory-mcp" in srv["args"]
+    assert "${workspaceFolder}/mcp-server" in srv["args"]
 
 
 def test_mcp_json_points_at_mcp_server():
@@ -63,7 +74,7 @@ def test_hooks_session_start_async():
 
 
 def test_scripts_are_executable():
-    for name in ("install.sh", "test-cycle.sh", "docker-up.sh", "curator-run.sh", "session-check.sh"):
+    for name in ("install.sh", "test-cycle.sh", "docker-up.sh", "setup-cursor.sh", "curator-run.sh", "session-check.sh"):
         path = ROOT / "scripts" / name
         assert path.stat().st_mode & 0o111, f"{name} should be executable"
 

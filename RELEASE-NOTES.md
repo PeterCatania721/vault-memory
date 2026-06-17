@@ -1,5 +1,9 @@
 # Release notes
 
+## 0.2.6 — 2026-06-17
+
+- **Cursor IDE support:** `.cursor/mcp.json`, `.cursor-plugin/plugin.json`, `scripts/setup-cursor.sh`
+
 ## 0.2.5 — 2026-06-17
 
 - **Resilience:** `resilience.py` bootstraps `~/.vault-memory/vault`, falls back to repo fixtures for audit/CI

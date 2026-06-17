@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "vault-memory": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "${workspaceFolder}/mcp-server",
+        "vault-memory-mcp"
+      ],
+      "env": {
+        "VAULT_MEMORY_CONFIG": "${userHome}/.vault-memory/config.yaml",
+        "PATH": "${userHome}/.local/bin:${env:PATH}"
+      }
+    }
+  }
+}

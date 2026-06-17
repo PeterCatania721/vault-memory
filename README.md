@@ -4,7 +4,7 @@
 [![Tests](https://img.shields.io/badge/tests-102%2F102%20passing-brightgreen)](STATUS.md)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-Cross-agent plugin for **Obsidian + Neo4j** memory (graph + vector embeddings + provenance). Works with **Grok Build**, **Claude Code**, and **Hermes Agent**.
+Cross-agent plugin for **Obsidian + Neo4j** memory (graph + vector embeddings + provenance). Works with **Cursor**, **Grok Build**, **Claude Code**, and **Hermes Agent**.
 
 Built from patterns engineers use successfully: markdown vault as source of truth, local embeddings, single Docker database, MCP stdio, incremental sync.
 
@@ -24,7 +24,7 @@ Obsidian vault (.md) — source of truth + YAML provenance on Memory/ notes
                      ▼
               vault-memory MCP (stdio)
                      │
-           Grok / Claude Code / Hermes
+           Grok / Claude Code / Hermes / Cursor
 ```
 
 ### Why Neo4j-only (v0.2+)
@@ -39,6 +39,12 @@ cd vault-memory
 bash scripts/install.sh
 bash scripts/docker-up.sh
 # Edit ~/.vault-memory/config.yaml → set vault.path, vector.provider: neo4j
+
+# Cursor
+bash scripts/setup-cursor.sh   # install + Docker + .cursor/mcp.json
+# Restart Cursor → Settings → Tools & MCP → enable vault-memory
+
+# Grok / Claude
 grok plugin install . --trust   # or Claude /plugin local path
 ```
 

@@ -52,6 +52,16 @@ bash scripts/setup-hermes.sh
 hermes mcp test vault_memory
 ```
 
+## Cursor
+
+```bash
+bash scripts/setup-cursor.sh
+```
+
+Opens **`.cursor/mcp.json`** in the repo (uses `${workspaceFolder}/mcp-server`). Restart Cursor, then **Settings → Tools & MCP** → enable `vault-memory`.
+
+Optional global install: copy `.cursor/mcp.json` to `~/.cursor/mcp.json` and replace `${workspaceFolder}` with the absolute repo path.
+
 ## Docker
 
 ```bash
