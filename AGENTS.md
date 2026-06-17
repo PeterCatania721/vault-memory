@@ -33,6 +33,14 @@ bash scripts/test-cycle.sh
 
 Unit tests: no Docker. Integration: `pytest -m integration` (needs Neo4j Docker).
 
+## After every change (mandatory)
+
+1. Update docs if behavior/architecture/tools changed: `README.md`, `STATUS.md`, `RELEASE-NOTES.md`, skills, `AGENTS.md`
+2. Run tests (`bash scripts/test-cycle.sh` or targeted pytest)
+3. `git add` → `git commit` → `git push` (`gh auth setup-git`)
+
+Never leave the repo out of sync with the code.
+
 ## Cross-agent paths
 
 | Agent | Plugin install | MCP config |
