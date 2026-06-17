@@ -1,5 +1,13 @@
 # Release notes
 
+## 0.2.3 — 2026-06-17
+
+- **Agentic memory layer** — two-tier architecture: concrete Neo4j (`TestRun` with command/cwd/exit_code) + abstract Obsidian (`Memory/Agent/Solutions|Anti-Patterns|Lessons`)
+- MCP: `add_agent_memory`, `query_agent_guidance` (success-boosted ranking, failure anti-patterns)
+- TestRun nodes store full recreation metadata from `verified_in`
+- Curator protects `Memory/Agent/**` and anti-pattern notes
+- Cloud-tested with Docker Neo4j (81 tests pass)
+
 ## 0.2.2 — 2026-06-17
 
 - Fix `provenance_trail` returning `found: false` when note YAML has `verified_in` but Neo4j Fact chain was never materialized

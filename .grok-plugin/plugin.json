@@ -1,6 +1,6 @@
 {
   "name": "vault-memory",
-  "version": "0.2.1",
+  "version": "0.2.3",
   "description": "Obsidian vault + Neo4j graph/vector + provenance GraphRAG memory for Grok Build, Claude Code, and Hermes Agent.",
   "author": {
     "name": "Peter Catania"

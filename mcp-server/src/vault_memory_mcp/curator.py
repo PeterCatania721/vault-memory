@@ -36,7 +36,11 @@ PROTECT_FRONTMATTER = re.compile(
     re.IGNORECASE,
 )
 SUCCESS_FRONTMATTER = re.compile(
-    r"(?:^|\n)status\s*:\s*success\b|(?:^|\n)type\s*:\s*(?:playbook|test-recipe|verification)\b",
+    r"(?:^|\n)status\s*:\s*success\b|(?:^|\n)type\s*:\s*(?:playbook|test-recipe|verification|solution)\b",
+    re.IGNORECASE,
+)
+ANTI_PATTERN_FRONTMATTER = re.compile(
+    r"(?:^|\n)type\s*:\s*anti-pattern\b",
     re.IGNORECASE,
 )
 PROTECT_TAGS = re.compile(
@@ -389,6 +393,10 @@ class VaultCurator:
         now: datetime,
     ) -> CuratorAction:
         rel = note.path
+
+        # Anti-patterns are protected knowledge — never archive (agents need them to avoid failures)
+        if ANTI_PATTERN_FRONTMATTER.search(note.content) or rel.startswith("Memory/Agent/"):
+            return CuratorAction(rel, "protected", "agent memory (solution/anti-pattern/lesson)", 1)
 
         # Step 2 first — actively remove false / expired / spoiled data
         if self._is_invalid(note):

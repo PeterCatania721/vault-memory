@@ -67,10 +67,11 @@ class CuratorConfig:
             "playbooks/**",
             "tests/success/**",
             "**/test-recipe*.md",
+            "Memory/Agent/**",
         ]
     )
     protect_tags: list[str] = field(
-        default_factory=lambda: ["pinned", "test-success", "playbook", "replicable"]
+        default_factory=lambda: ["pinned", "test-success", "playbook", "replicable", "avoid"]
     )
 
 

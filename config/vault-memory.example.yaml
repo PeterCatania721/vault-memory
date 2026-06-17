@@ -42,6 +42,7 @@ curator:
     - "playbooks/**"
     - "tests/success/**"
     - "**/test-recipe*.md"
+    - "Memory/Agent/**"
   protect_tags:
     - pinned
     - test-success

@@ -1,14 +1,14 @@
 # vault-memory
 
-[![Status](https://img.shields.io/badge/status-stable%20(v0.2.1)-green)](STATUS.md)
-[![Tests](https://img.shields.io/badge/tests-70%2F70%20passing-brightgreen)](STATUS.md)
+[![Status](https://img.shields.io/badge/status-stable%20(v0.2.3)-green)](STATUS.md)
+[![Tests](https://img.shields.io/badge/tests-81%2F81%20passing-brightgreen)](STATUS.md)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 Cross-agent plugin for **Obsidian + Neo4j** memory (graph + vector embeddings + provenance). Works with **Grok Build**, **Claude Code**, and **Hermes Agent**.
 
 Built from patterns engineers use successfully: markdown vault as source of truth, local embeddings, single Docker database, MCP stdio, incremental sync.
 
-> **Current status:** v0.2.1 — Neo4j-only, provenance GraphRAG, 24 MCP tools, [full details in STATUS.md](STATUS.md).
+> **Current status:** v0.2.3 — agentic memory layers, Neo4j concrete + Obsidian abstract, 26 MCP tools, [full details in STATUS.md](STATUS.md).
 
 ## Architecture
 
@@ -51,6 +51,8 @@ grok plugin install . --trust   # or Claude /plugin local path
 | `search_vault_hybrid` | **Default** — semantic + graph + provenance |
 | `search_vault_semantic` | Neo4j vector search on chunks |
 | `provenance_trail` / `query_stale_facts` | Audit sources and stale facts |
+| `add_agent_memory` | Write solution / anti-pattern / lesson with recreation metadata |
+| `query_agent_guidance` | **Agent default** — ranked solutions + failures to avoid |
 | `add_research_memory` | Write provenance-structured Memory/ note |
 | `graph_neighbors` / `graph_query` | Wikilink graph + Cypher |
 | `sync_vault` | Index / reindex |
@@ -75,7 +77,7 @@ Legacy Qdrant is not used. If an old `qdrant` container is still running, stop a
 | Neo4j | 5.26.0-community |
 | neo4j (Python) | 5.26.0 |
 | sentence-transformers | 3.3.1 |
-| vault-memory-mcp | 0.2.1 |
+| vault-memory-mcp | 0.2.3 |
 
 ## Tests (Elon loop)
 
