@@ -156,6 +156,8 @@ def write_agent_memory(
     task_id: str = "",
 ) -> tuple[str, dict[str, Any], list[str]]:
     """Write agent memory note. Returns (rel_path, frontmatter, validation_issues)."""
+    if memory_type not in MEMORY_TYPES:
+        raise ValueError(f"memory_type must be one of {MEMORY_TYPES}")
     slug = title.lower().replace(" ", "-")[:50]
     slug = re.sub(r"[^a-z0-9-]", "", slug) or "memory"
     rel = agent_memory_path(memory_type, slug)

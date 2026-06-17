@@ -1,7 +1,7 @@
 # vault-memory
 
 [![Status](https://img.shields.io/badge/status-stable%20(v0.2.4)-green)](STATUS.md)
-[![Tests](https://img.shields.io/badge/tests-83%2F83%20passing-brightgreen)](STATUS.md)
+[![Tests](https://img.shields.io/badge/tests-96%2F96%20passing-brightgreen)](STATUS.md)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 Cross-agent plugin for **Obsidian + Neo4j** memory (graph + vector embeddings + provenance). Works with **Grok Build**, **Claude Code**, and **Hermes Agent**.

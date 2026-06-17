@@ -8,9 +8,9 @@
 
 | Suite | Result |
 |-------|--------|
-| Unit + environment tests (74) | Pass |
+| Unit + environment tests (87) | Pass |
 | Integration (Docker: Neo4j) | Pass (9) |
-| **Total** | **83 pass** |
+| **Total** | **96 pass** |
 
 ## MCP tools: 25
 

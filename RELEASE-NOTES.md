@@ -14,6 +14,7 @@
 
 - Policy stubs shipped in test fixtures: `Long-Term-Memory-Policy`, `Test-Memory-Recreation-Policy`
 - **25 MCP tools** (was 26)
+- Common-error tests: invalid memory_type, missing recreation, wrong outcome, curator agent paths
 
 ## 0.2.3 — 2026-06-17
 
