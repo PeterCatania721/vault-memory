@@ -18,3 +18,5 @@ services:
 
 volumes:
   neo4j_data:
+    external: true
+    name: vault-memory-neo4j-data

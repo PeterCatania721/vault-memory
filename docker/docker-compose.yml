@@ -1,10 +1,12 @@
 # vault-memory — Neo4j-only stack (graph + vector embeddings)
-# Usage: docker compose --profile unified up -d
+# Usage: docker compose -f docker/docker-compose.yml up -d
+
+name: vault-memory
 
 services:
   neo4j:
     image: neo4j:5.26.0-community
-    profiles: ["unified", "graph", "all"]
+    container_name: vault-memory-neo4j
     ports:
       - "${NEO4J_HTTP_PORT:-7474}:7474"
       - "${NEO4J_BOLT_PORT:-7687}:7687"
@@ -18,7 +20,10 @@ services:
       interval: 15s
       timeout: 10s
       retries: 5
+      start_period: 40s
     restart: unless-stopped
 
 volumes:
   neo4j_data:
+    external: true
+    name: vault-memory-neo4j-data
