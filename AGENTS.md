@@ -37,7 +37,8 @@ Unit tests: no Docker. Integration: `pytest -m integration` (needs Neo4j Docker)
 
 1. Update docs if behavior/architecture/tools changed: `README.md`, `STATUS.md`, `RELEASE-NOTES.md`, skills, `AGENTS.md`
 2. Run tests (`bash scripts/test-cycle.sh` or targeted pytest)
-3. `git add` → `git commit` → `git push` (`gh auth setup-git`)
+3. **Save test memory** — success **and** failure — to Obsidian `Memory/` with full recreation metadata (`verified_in`: command, cwd, exit_code, expected/actual, versions, git commit, containers/volumes). Policy: vault note `Test-Memory-Recreation-Policy`. Use `scripts/add_research_memory.py` or MCP `add_research_memory`, then sync.
+4. `git add` → `git commit` → `git push` (`gh auth setup-git`)
 
 Never leave the repo out of sync with the code.
 
