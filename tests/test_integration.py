@@ -187,10 +187,6 @@ def test_provenance_graph_chain(integration_config):
         sync.run(force=True)
 
         store = ProvenanceStore(sync.graph, vault)
-        result = store.upsert_from_note(rel)
-        assert result["ok"] is True
-        assert result["verification_count"] == 1
-
         trail = store.provenance_trail(rel)
         assert trail["found"] is True
         assert trail["source"] == "https://example.com/provenance-test"

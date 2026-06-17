@@ -1,5 +1,11 @@
 # Release notes
 
+## 0.2.2 — 2026-06-17
+
+- Fix `provenance_trail` returning `found: false` when note YAML has `verified_in` but Neo4j Fact chain was never materialized
+- `sync_vault` now upserts Fact/Source/TestRun graph for Memory/ notes (and other provenance-frontmatter notes) on each indexed change
+- `provenance_trail` lazy-upserts from vault frontmatter when the graph chain is missing
+
 ## 0.2.1 — 2026-06-17
 
 - Provenance GraphRAG: `search_vault_hybrid`, `provenance_trail`, `query_stale_facts`

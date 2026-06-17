@@ -26,6 +26,15 @@ def parse_frontmatter(content: str) -> dict[str, Any]:
     return fm
 
 
+def has_provenance_frontmatter(fm: dict[str, Any], *, rel_path: str = "") -> bool:
+    """True when note YAML can populate the Fact → Source → TestRun graph."""
+    if not fm.get("source") or not fm.get("source_type"):
+        return False
+    if rel_path.startswith("Memory/") and not rel_path.startswith("Memory/Curator-Logs/"):
+        return True
+    return bool(fm.get("verified_in") or fm.get("last_verified"))
+
+
 def validate_frontmatter(fm: dict[str, Any], *, memory_note: bool = False) -> list[str]:
     issues: list[str] = []
     required = MEMORY_REQUIRED if memory_note else REQUIRED_FRONTMATTER
@@ -299,9 +308,9 @@ class ProvenanceStore:
             )
             return [dict(r) for r in rows]
 
-    def provenance_trail(self, rel_path: str, depth: int = 2) -> dict[str, Any]:
+    def _fetch_provenance_trail(self, rel_path: str, depth: int) -> dict[str, Any] | None:
         with self.graph._session() as session:
-            fact = session.run(
+            return session.run(
                 """
                 MATCH (n:Note {path: $path})-[:DOCUMENTS]->(f:Fact)
                 OPTIONAL MATCH (f)-[:SOURCED_FROM]->(s:Source)
@@ -316,9 +325,11 @@ class ProvenanceStore:
                 """,
                 path=rel_path,
             ).single()
-            neighbors = self.graph.neighbors(rel_path, depth=depth)
-        if not fact:
-            return {"path": rel_path, "found": False, "neighbors": neighbors}
+
+    def _format_provenance_trail(
+        self, rel_path: str, fact: dict[str, Any], *, depth: int
+    ) -> dict[str, Any]:
+        neighbors = self.graph.neighbors(rel_path, depth=depth)
         return {
             "path": rel_path,
             "found": True,
@@ -330,6 +341,24 @@ class ProvenanceStore:
             "systems": [s for s in (fact.get("systems") or []) if s],
             "neighbors": neighbors,
         }
+
+    def provenance_trail(self, rel_path: str, depth: int = 2) -> dict[str, Any]:
+        fact = self._fetch_provenance_trail(rel_path, depth)
+        if fact:
+            return self._format_provenance_trail(rel_path, fact, depth=depth)
+
+        note_path = self.vault_path / rel_path
+        if note_path.exists():
+            fm = parse_frontmatter(read_note(self.vault_path, rel_path).content)
+            if has_provenance_frontmatter(fm, rel_path=rel_path):
+                upsert = self.upsert_from_note(rel_path)
+                if upsert.get("ok"):
+                    fact = self._fetch_provenance_trail(rel_path, depth)
+                    if fact:
+                        return self._format_provenance_trail(rel_path, fact, depth=depth)
+
+        neighbors = self.graph.neighbors(rel_path, depth=depth)
+        return {"path": rel_path, "found": False, "neighbors": neighbors}
 
 
 def hybrid_search(

@@ -10,6 +10,7 @@ from typing import Any
 from .config import AppConfig
 from .graph import GraphStore
 from .obsidian import list_notes, read_note
+from .provenance import ProvenanceStore, has_provenance_frontmatter, parse_frontmatter
 
 STATE_FILE = "sync-state.json"
 
@@ -36,6 +37,7 @@ class VaultSync:
         self.state_dir = state_dir or Path.home() / ".vault-memory"
         self.state_path = self.state_dir / STATE_FILE
         self.graph: GraphStore | None = None
+        self._provenance: ProvenanceStore | None = None
         if config.graph.enabled:
             self.graph = GraphStore(config.graph, config.vector if config.vector.enabled else None)
 
@@ -78,6 +80,14 @@ class VaultSync:
 
                 if self.graph:
                     self.graph.upsert_note(note)
+                    fm = parse_frontmatter(note.content)
+                    if has_provenance_frontmatter(fm, rel_path=rel):
+                        if self._provenance is None:
+                            self._provenance = ProvenanceStore(self.graph, vault)
+                        prov = self._provenance.upsert_from_note(rel)
+                        if not prov.get("ok"):
+                            issues = prov.get("issues") or prov
+                            errors.append(f"{rel}: provenance: {issues}")
 
                 state[rel] = note.content_hash
                 indexed += 1

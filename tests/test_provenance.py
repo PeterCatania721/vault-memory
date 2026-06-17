@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 
 from vault_memory_mcp.provenance import (
     build_research_frontmatter,
+    has_provenance_frontmatter,
     spoil_status,
     validate_frontmatter,
 )
@@ -54,6 +55,17 @@ def test_spoil_unverified_stale():
     status = spoil_status(fm, now)
     assert status["spoiled"] is True
     assert status["unverified_stale"] is True
+
+
+def test_has_provenance_frontmatter_memory_note():
+    fm = build_research_frontmatter(source="internal://policy", source_type="policy")
+    assert has_provenance_frontmatter(fm, rel_path="Memory/Long-Term-Memory-Policy.md")
+
+
+def test_has_provenance_frontmatter_requires_source_fields():
+    fm = build_research_frontmatter(source="x", source_type="web")
+    del fm["source"]
+    assert not has_provenance_frontmatter(fm, rel_path="Memory/foo.md")
 
 
 def test_spoil_recent_verification_blocks_archive():
