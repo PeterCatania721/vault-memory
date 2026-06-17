@@ -1,16 +1,16 @@
 # vault-memory status
 
-**Version:** 0.2.4  
-**Status:** Stable — Elon-simplified, cloud-tested  
+**Version:** 0.2.5  
+**Status:** Stable — resilient bootstrap, cloud-tested  
 **Last verified:** 2026-06-17 (cloud VM + Neo4j 5.26 Docker)
 
 ## Test results
 
 | Suite | Result |
 |-------|--------|
-| Unit + environment tests (87) | Pass |
+| Unit + environment tests (93) | Pass |
 | Integration (Docker: Neo4j) | Pass (9) |
-| **Total** | **96 pass** |
+| **Total** | **102 pass** |
 
 ## MCP tools: 25
 

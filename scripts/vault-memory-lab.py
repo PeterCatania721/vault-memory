@@ -65,7 +65,11 @@ verified_at: {NOW}
 
 
 def run_tasks() -> list[dict]:
-    cfg = load_config()
+    from vault_memory_mcp.resilience import ensure_config_and_vault
+
+    cfg, mode, warnings = ensure_config_and_vault(repo_root_path=ROOT, allow_fixture=True)
+    if mode == "missing":
+        return [_fail(1, "health-baseline", f"vault missing: {cfg.vault.path}; {'; '.join(warnings)}")]
     vault = cfg.vault.path
     lab_path = vault / LAB_DIR
     lab_path.mkdir(parents=True, exist_ok=True)

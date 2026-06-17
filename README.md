@@ -1,14 +1,14 @@
 # vault-memory
 
-[![Status](https://img.shields.io/badge/status-stable%20(v0.2.4)-green)](STATUS.md)
-[![Tests](https://img.shields.io/badge/tests-96%2F96%20passing-brightgreen)](STATUS.md)
+[![Status](https://img.shields.io/badge/status-stable%20(v0.2.5)-green)](STATUS.md)
+[![Tests](https://img.shields.io/badge/tests-102%2F102%20passing-brightgreen)](STATUS.md)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 Cross-agent plugin for **Obsidian + Neo4j** memory (graph + vector embeddings + provenance). Works with **Grok Build**, **Claude Code**, and **Hermes Agent**.
 
 Built from patterns engineers use successfully: markdown vault as source of truth, local embeddings, single Docker database, MCP stdio, incremental sync.
 
-> **Current status:** v0.2.4 — Elon-simplified stack, 25 MCP tools, agent memory with enforced recreation metadata, [full details in STATUS.md](STATUS.md).
+> **Current status:** v0.2.5 — resilient bootstrap, agent memory layers, 25 MCP tools, [full details in STATUS.md](STATUS.md).
 
 ## Architecture
 

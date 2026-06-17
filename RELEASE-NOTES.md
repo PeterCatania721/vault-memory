@@ -1,5 +1,14 @@
 # Release notes
 
+## 0.2.5 — 2026-06-17
+
+- **Resilience:** `resilience.py` bootstraps `~/.vault-memory/vault`, falls back to repo fixtures for audit/CI
+- `install.sh` auto-creates vault + welcome note when path missing
+- `elon-5step-audit.py` no longer crashes on missing Obsidian path; reports to vault or `~/.vault-memory/reports/`
+- `VaultSync.run(require_vault=False)` soft-fail; `health_check` includes `hint` when vault missing
+- `session-check.sh` uses bootstrap; curator dry-run skips vault log writes (already in 0.2.4)
+- Default config vault path: `~/.vault-memory/vault` (was `~/Documents/Obsidian/MyVault`)
+
 ## 0.2.4 — 2026-06-17 (Elon algorithm pass)
 
 **01 Less dumb requirements:** `add_agent_memory` enforces recreation metadata (`command`, `cwd`, `exit_code`) for solutions and anti-patterns.

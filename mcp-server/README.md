@@ -7,4 +7,4 @@ uv sync --all-extras
 uv run vault-memory-mcp
 ```
 
-**v0.2.4** — 25 tools. Agent: `query_agent_guidance`. General: `search_vault_hybrid`.
+**v0.2.5** — 25 tools. Resilient vault bootstrap. Agent: `query_agent_guidance`.
