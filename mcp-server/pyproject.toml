@@ -1,16 +1,16 @@
 [project]
 name = "vault-memory-mcp"
-version = "0.1.1"
-description = "MCP server: Obsidian vault + Qdrant vectors + Neo4j graph"
+version = "0.2.1"
+description = "MCP server: Obsidian vault + Neo4j graph and vector embeddings"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "mcp>=1.6.0,<2",
-    "qdrant-client==1.12.1",
     "neo4j==5.26.0",
     "sentence-transformers==3.3.1",
     "pyyaml==6.0.2",
     "httpx>=0.27.0,<1",
+    "watchdog>=6.0.0,<7",
 ]
 
 [project.optional-dependencies]

@@ -9,7 +9,7 @@
         "vault-memory-mcp"
       ],
       "env": {
-        "VAULT_MEMORY_CONFIG": "${GROK_PLUGIN_DATA}/config.yaml"
+        "VAULT_MEMORY_CONFIG": "${HOME}/.vault-memory/config.yaml"
       }
     }
   }

@@ -1,7 +1,7 @@
 {
   "name": "vault-memory",
-  "version": "0.1.1",
-  "description": "Obsidian vault + Qdrant vector search + Neo4j knowledge graph memory for Grok Build, Claude Code, and Hermes Agent.",
+  "version": "0.2.1",
+  "description": "Obsidian vault + Neo4j graph/vector + provenance GraphRAG memory for Grok Build, Claude Code, and Hermes Agent.",
   "author": {
     "name": "Peter Catania"
   },
@@ -11,8 +11,8 @@
   "keywords": [
     "obsidian",
     "memory",
-    "qdrant",
     "neo4j",
+    "provenance",
     "vector",
     "knowledge-graph",
     "mcp",

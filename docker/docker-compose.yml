@@ -1,22 +1,7 @@
-# vault-memory — unified stack (both DBs in one compose file)
+# vault-memory — Neo4j-only stack (graph + vector embeddings)
 # Usage: docker compose --profile unified up -d
-# Pin versions for reproducibility.
 
 services:
-  qdrant:
-    image: qdrant/qdrant:v1.12.5
-    profiles: ["unified", "vector", "all"]
-    ports:
-      - "${QDRANT_PORT:-6333}:6333"
-    volumes:
-      - qdrant_data:/qdrant/storage
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:6333/readyz"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
   neo4j:
     image: neo4j:5.26.0-community
     profiles: ["unified", "graph", "all"]
@@ -36,5 +21,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  qdrant_data:
   neo4j_data:

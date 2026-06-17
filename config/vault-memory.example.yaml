@@ -1,10 +1,8 @@
-# vault-memory configuration (Software 3.0: edit in plain language, then re-run setup or sync)
+# vault-memory configuration (Neo4j-only: graph + vector embeddings)
 # Copy to ~/.vault-memory/config.yaml or set VAULT_MEMORY_CONFIG to your path.
 
 vault:
-  # Absolute path to your Obsidian vault (markdown source of truth)
   path: ~/Documents/Obsidian/MyVault
-  # Glob patterns to ignore (Obsidian trash, templates, etc.)
   ignore:
     - ".obsidian/**"
     - ".trash/**"
@@ -12,10 +10,7 @@ vault:
 
 vector:
   enabled: true
-  provider: qdrant
-  url: http://127.0.0.1:6333
-  collection: vault_memory
-  # Local embeddings — no API key required (proven default)
+  provider: neo4j
   embedding_model: sentence-transformers/all-MiniLM-L6-v2
   chunk_size: 800
   chunk_overlap: 100
@@ -29,11 +24,26 @@ graph:
   database: neo4j
 
 sync:
-  # Build wikilink graph edges from [[Note]] links
   wikilinks: true
-  # Re-embed only changed files (mtime hash)
   incremental: true
 
 docker:
-  # unified = one compose stack | separate = one container per DB
   mode: unified
+
+curator:
+  enabled: true
+  interval_hours: 168
+  stale_after_days: 30
+  archive_after_days: 90
+  compress_after_days: 60
+  compress_min_words: 800
+  compress_max_chars: 12000
+  protect_paths:
+    - "playbooks/**"
+    - "tests/success/**"
+    - "**/test-recipe*.md"
+  protect_tags:
+    - pinned
+    - test-success
+    - playbook
+    - replicable

@@ -5,9 +5,14 @@ from __future__ import annotations
 import hashlib
 import re
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
+from typing import Any
+
+import yaml
 
 WIKILINK_RE = re.compile(r"\[\[([^\]|#]+)(?:#[^\]]*)?(?:\|[^\]]*)?\]\]")
+FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 
 
 @dataclass
@@ -38,6 +43,40 @@ def list_notes(vault_path: Path, ignore: list[str] | None = None) -> list[str]:
             continue
         notes.append(rel)
     return notes
+
+
+def split_frontmatter(content: str) -> tuple[dict[str, Any], str]:
+    match = FRONTMATTER_RE.match(content)
+    if not match:
+        return {}, content
+    raw = match.group(1)
+    body = content[match.end() :]
+    data = yaml.safe_load(raw) or {}
+    if not isinstance(data, dict):
+        data = {}
+    return data, body
+
+
+def merge_frontmatter(content: str, fields: dict[str, Any]) -> str:
+    fm, body = split_frontmatter(content)
+    fm.update(fields)
+    header = yaml.safe_dump(fm, sort_keys=False).strip()
+    return f"---\n{header}\n---\n\n{body.lstrip()}"
+
+
+def set_note_fields(vault_path: Path, rel_path: str, fields: dict[str, Any]) -> Note:
+    note = read_note(vault_path, rel_path)
+    updated = merge_frontmatter(note.content, fields)
+    write_note(vault_path, rel_path, updated)
+    return read_note(vault_path, rel_path)
+
+
+def write_note(vault_path: Path, rel_path: str, content: str) -> None:
+    full = (vault_path / rel_path).resolve()
+    if not str(full).startswith(str(vault_path.resolve())):
+        raise ValueError(f"Path escapes vault: {rel_path}")
+    full.parent.mkdir(parents=True, exist_ok=True)
+    full.write_text(content, encoding="utf-8")
 
 
 def read_note(vault_path: Path, rel_path: str) -> Note:

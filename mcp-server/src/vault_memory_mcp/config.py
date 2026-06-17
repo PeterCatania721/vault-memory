@@ -21,10 +21,12 @@ class VaultConfig:
 
 @dataclass
 class VectorConfig:
+    """Embedding settings — vectors are stored on Neo4j node properties."""
+
     enabled: bool = True
-    provider: str = "qdrant"
-    url: str = "http://127.0.0.1:6333"
-    collection: str = "vault_memory"
+    provider: str = "neo4j"
+    url: str = ""  # deprecated (Qdrant removed)
+    collection: str = "vault_memory"  # deprecated label only
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     chunk_size: int = 800
     chunk_overlap: int = 100
@@ -52,12 +54,34 @@ class DockerConfig:
 
 
 @dataclass
+class CuratorConfig:
+    enabled: bool = True
+    interval_hours: int = 168
+    stale_after_days: int = 30
+    archive_after_days: int = 90
+    compress_after_days: int = 60
+    compress_min_words: int = 800
+    compress_max_chars: int = 12000
+    protect_paths: list[str] = field(
+        default_factory=lambda: [
+            "playbooks/**",
+            "tests/success/**",
+            "**/test-recipe*.md",
+        ]
+    )
+    protect_tags: list[str] = field(
+        default_factory=lambda: ["pinned", "test-success", "playbook", "replicable"]
+    )
+
+
+@dataclass
 class AppConfig:
     vault: VaultConfig
     vector: VectorConfig = field(default_factory=VectorConfig)
     graph: GraphConfig = field(default_factory=GraphConfig)
     sync: SyncConfig = field(default_factory=SyncConfig)
     docker: DockerConfig = field(default_factory=DockerConfig)
+    curator: CuratorConfig = field(default_factory=CuratorConfig)
     config_path: Path = field(default_factory=lambda: DEFAULT_CONFIG_PATH)
 
     def to_dict(self) -> dict[str, Any]:
@@ -88,6 +112,17 @@ class AppConfig:
                 "incremental": self.sync.incremental,
             },
             "docker": {"mode": self.docker.mode},
+            "curator": {
+                "enabled": self.curator.enabled,
+                "interval_hours": self.curator.interval_hours,
+                "stale_after_days": self.curator.stale_after_days,
+                "archive_after_days": self.curator.archive_after_days,
+                "compress_after_days": self.curator.compress_after_days,
+                "compress_min_words": self.curator.compress_min_words,
+                "compress_max_chars": self.curator.compress_max_chars,
+                "protect_paths": self.curator.protect_paths,
+                "protect_tags": self.curator.protect_tags,
+            },
         }
 
 
@@ -115,6 +150,7 @@ def load_config(path: Path | None = None) -> AppConfig:
     graph_raw = raw.get("graph", {})
     sync_raw = raw.get("sync", {})
     docker_raw = raw.get("docker", {})
+    curator_raw = raw.get("curator", {})
 
     return AppConfig(
         vault=VaultConfig(
@@ -125,6 +161,9 @@ def load_config(path: Path | None = None) -> AppConfig:
         graph=GraphConfig(**{k: v for k, v in graph_raw.items() if k in GraphConfig.__dataclass_fields__}),
         sync=SyncConfig(**{k: v for k, v in sync_raw.items() if k in SyncConfig.__dataclass_fields__}),
         docker=DockerConfig(**{k: v for k, v in docker_raw.items() if k in DockerConfig.__dataclass_fields__}),
+        curator=CuratorConfig(
+            **{k: v for k, v in curator_raw.items() if k in CuratorConfig.__dataclass_fields__}
+        ),
         config_path=config_path,
     )
 

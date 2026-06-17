@@ -1,14 +1,14 @@
 from pathlib import Path
 
-from vault_memory_mcp.obsidian import chunk_text, keyword_search, list_notes, read_note
+from vault_memory_mcp.obsidian import chunk_text, keyword_search, list_notes, read_note, write_note
 
-FIXTURES = Path(__file__).parent / "fixtures" / "vault"
+from conftest import FIXTURE_IGNORE, FIXTURES, fixture_note_count
 
 
 def test_list_notes():
-    notes = list_notes(FIXTURES)
+    notes = list_notes(FIXTURES, FIXTURE_IGNORE)
     assert "project-alpha.md" in notes
-    assert len(notes) == 2
+    assert len(notes) == fixture_note_count()
 
 
 def test_read_note_wikilinks():
@@ -29,3 +29,21 @@ def test_chunk_text():
     chunks = chunk_text(text, chunk_size=100, overlap=10)
     assert len(chunks) >= 2
     assert all(len(c) <= 110 for c in chunks)
+
+
+def test_write_note_roundtrip(tmp_path: Path):
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    write_note(vault, "notes/new.md", "# Hello\n\nBody")
+    note = read_note(vault, "notes/new.md")
+    assert note.title == "new"
+    assert "Hello" in note.content
+
+
+def test_list_notes_respects_ignore(tmp_path: Path):
+    vault = tmp_path / "vault"
+    (vault / ".obsidian").mkdir(parents=True)
+    (vault / ".obsidian" / "cache.md").write_text("skip")
+    (vault / "keep.md").write_text("keep")
+    notes = list_notes(vault, [".obsidian/**"])
+    assert notes == ["keep.md"]

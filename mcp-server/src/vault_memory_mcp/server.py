@@ -9,7 +9,16 @@ from typing import Any
 from mcp.server.fastmcp import FastMCP
 
 from .config import AppConfig, load_config, save_config
+from .curator import VaultCurator
 from .obsidian import keyword_search, list_notes, read_note
+from .obsidian import read_note
+from .provenance import (
+    ProvenanceStore,
+    build_research_frontmatter,
+    hybrid_search,
+    validate_frontmatter,
+    write_research_note,
+)
 from .sync import VaultSync
 
 mcp = FastMCP("vault-memory")
@@ -25,15 +34,37 @@ def _get_config() -> AppConfig:
     return _config
 
 
+def _state_dir() -> __import__("pathlib").Path:
+    override = os.environ.get("VAULT_MEMORY_STATE_DIR")
+    if override:
+        return __import__("pathlib").Path(override)
+    plugin_data = os.environ.get("GROK_PLUGIN_DATA") or os.environ.get("CLAUDE_PLUGIN_DATA")
+    if plugin_data:
+        return __import__("pathlib").Path(plugin_data)
+    return __import__("pathlib").Path.home() / ".vault-memory"
+
+
 def _get_sync() -> VaultSync:
     global _sync
     if _sync is None:
-        plugin_data = os.environ.get("GROK_PLUGIN_DATA") or os.environ.get("CLAUDE_PLUGIN_DATA")
-        state_dir = None
-        if plugin_data:
-            state_dir = __import__("pathlib").Path(plugin_data)
-        _sync = VaultSync(_get_config(), state_dir=state_dir)
+        _sync = VaultSync(_get_config(), state_dir=_state_dir())
     return _sync
+
+
+def _get_curator() -> VaultCurator:
+    sync = _get_sync()
+    return VaultCurator(
+        _get_config(),
+        state_dir=_state_dir(),
+        graph=sync.graph,
+    )
+
+
+def _record_usage(path: str, action: str) -> None:
+    try:
+        _get_curator().usage.record(path, action=action)
+    except Exception:
+        pass
 
 
 @mcp.tool()
@@ -69,6 +100,19 @@ def update_config(updates_json: str) -> str:
     for field in ("enabled", "uri", "user", "password", "database"):
         if field in data.get("graph", {}):
             setattr(cfg.graph, field, data["graph"][field])
+    for field in (
+        "enabled",
+        "interval_hours",
+        "stale_after_days",
+        "archive_after_days",
+        "compress_after_days",
+        "compress_min_words",
+        "compress_max_chars",
+        "protect_paths",
+        "protect_tags",
+    ):
+        if field in data.get("curator", {}):
+            setattr(cfg.curator, field, data["curator"][field])
     save_config(cfg)
     global _config, _sync
     _config = cfg
@@ -88,6 +132,7 @@ def list_vault_notes() -> str:
 def read_vault_note(path: str) -> str:
     """Read a single note by relative path."""
     cfg = _get_config()
+    _record_usage(path, "read")
     note = read_note(cfg.vault.path, path)
     return json.dumps(
         {
@@ -105,16 +150,126 @@ def search_vault_keyword(query: str, limit: int = 10) -> str:
     """Full-text keyword search across vault markdown files."""
     cfg = _get_config()
     hits = keyword_search(cfg.vault.path, query, cfg.vault.ignore, limit=limit)
+    for hit in hits:
+        if hit.get("path"):
+            _record_usage(hit["path"], "keyword_search")
     return json.dumps({"query": query, "results": hits}, indent=2)
 
 
 @mcp.tool()
 def search_vault_semantic(query: str, limit: int = 10) -> str:
-    """Semantic vector search via Qdrant embeddings."""
+    """Semantic vector search via Neo4j Chunk embeddings."""
     sync = _get_sync()
-    if not sync.vector:
-        return json.dumps({"error": "Vector store disabled in config"})
-    hits = sync.vector.search(query, limit=limit)
+    if not sync.graph:
+        return json.dumps({"error": "Graph store disabled in config"})
+    hits = sync.graph.search(query, limit=limit)
+    for hit in hits:
+        if hit.get("path"):
+            _record_usage(hit["path"], "semantic_search")
+    return json.dumps({"query": query, "results": hits}, indent=2)
+
+
+@mcp.tool()
+def search_vault_hybrid(query: str, limit: int = 5, depth: int = 2) -> str:
+    """Default retrieval: semantic + graph neighbors + provenance trail per hit."""
+    sync = _get_sync()
+    if not sync.graph:
+        return json.dumps({"error": "Graph store disabled in config"})
+    hits = hybrid_search(sync.graph, query, limit=limit, depth=depth, vault_path=_get_config().vault.path)
+    for hit in hits:
+        if hit.get("path"):
+            _record_usage(hit["path"], "hybrid_search")
+    return json.dumps({"query": query, "results": hits}, indent=2)
+
+
+@mcp.tool()
+def upsert_note_provenance(path: str) -> str:
+    """Create Fact/Source/TestRun nodes in Neo4j from note YAML frontmatter."""
+    sync = _get_sync()
+    if not sync.graph:
+        return json.dumps({"error": "Graph store disabled in config"})
+    cfg = _get_config()
+    store = ProvenanceStore(sync.graph, cfg.vault.path)
+    result = store.upsert_from_note(path)
+    if result.get("ok"):
+        sync.graph.upsert_note(read_note(cfg.vault.path, path))
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+def add_research_memory(
+    topic: str,
+    body: str,
+    source: str,
+    source_type: str = "research",
+    confidence: float = 0.8,
+    spoil_after_days: int = 180,
+    verification_json: str = "[]",
+) -> str:
+    """Write a provenance-structured Memory/Research-* note and sync graph."""
+    cfg = _get_config()
+    sync = _get_sync()
+    slug = topic.lower().replace(" ", "-")[:60]
+    day = __import__("datetime").datetime.now(__import__("datetime").timezone.utc).strftime("%Y-%m-%d")
+    rel = f"Memory/Research-{slug}-{day}.md"
+    verified = json.loads(verification_json) if verification_json.strip() else []
+    fm = build_research_frontmatter(
+        source=source,
+        source_type=source_type,
+        confidence=confidence,
+        spoil_after_days=spoil_after_days,
+        verified_in=verified,
+        related_to=["[[Long-Term-Memory-Policy]]"],
+    )
+    issues = validate_frontmatter(fm, memory_note=True)
+    if issues:
+        return json.dumps({"ok": False, "issues": issues})
+    write_research_note(cfg.vault.path, rel, topic, body, fm)
+    prov = {"ok": False}
+    curator_preview: dict[str, Any] | None = None
+    if sync.graph:
+        store = ProvenanceStore(sync.graph, cfg.vault.path)
+        prov = store.upsert_from_note(rel)
+        sync.run(force=False)
+        curator_preview = _get_curator().run(dry_run=True).to_dict()
+    return json.dumps(
+        {"ok": True, "path": rel, "provenance": prov, "curator_preview": curator_preview},
+        indent=2,
+    )
+
+
+@mcp.tool()
+def provenance_trail(path: str, depth: int = 2) -> str:
+    """Return Fact → Source → TestRun chain for a vault note."""
+    sync = _get_sync()
+    if not sync.graph:
+        return json.dumps({"error": "Graph store disabled in config"})
+    store = ProvenanceStore(sync.graph, _get_config().vault.path)
+    return json.dumps(store.provenance_trail(path, depth=depth), indent=2)
+
+
+@mcp.tool()
+def query_stale_facts(days: int = 90, source_type: str = "") -> str:
+    """Facts with no successful verification in last N days (e.g. ossinsight)."""
+    sync = _get_sync()
+    if not sync.graph:
+        return json.dumps({"error": "Graph store disabled in config"})
+    store = ProvenanceStore(sync.graph, _get_config().vault.path)
+    st = source_type.strip() or None
+    rows = store.query_unverified_stale(days=days, source_type=st)
+    return json.dumps({"days": days, "source_type": st, "facts": rows}, indent=2)
+
+
+@mcp.tool()
+def search_vault_graphrag(query: str, limit: int = 5, depth: int = 2) -> str:
+    """GraphRAG: Neo4j vector search + wikilink graph context expansion."""
+    sync = _get_sync()
+    if not sync.graph:
+        return json.dumps({"error": "Graph store disabled in config"})
+    hits = sync.graph.search_with_graph_context(query, limit=limit, depth=depth)
+    for hit in hits:
+        if hit.get("path"):
+            _record_usage(hit["path"], "graphrag_search")
     return json.dumps({"query": query, "results": hits}, indent=2)
 
 
@@ -140,9 +295,76 @@ def graph_query(cypher: str) -> str:
 
 @mcp.tool()
 def sync_vault(force: bool = False) -> str:
-    """Index vault into Qdrant vectors and Neo4j graph. Incremental by default."""
+    """Index vault into Neo4j (wikilinks + Chunk embeddings). Incremental by default."""
     result = _get_sync().run(force=force)
     return json.dumps(result.to_dict(), indent=2)
+
+
+@mcp.tool()
+def curator_status() -> str:
+    """Return vault curator scheduler state, thresholds, and last run summary."""
+    return json.dumps(_get_curator().status(), indent=2)
+
+
+@mcp.tool()
+def run_curator(dry_run: bool = False, force: bool = False) -> str:
+    """Run Elon 5-step curator cycle: protect success data, archive stale, compress verbose notes."""
+    curator = _get_curator()
+    if not force and not dry_run:
+        result = curator.maybe_run(dry_run=False)
+        if result is None:
+            return json.dumps(
+                {
+                    "skipped": True,
+                    "reason": "interval not elapsed or curator paused/disabled",
+                    "status": curator.status(),
+                },
+                indent=2,
+            )
+        return json.dumps(result.to_dict(), indent=2)
+    return json.dumps(curator.run(dry_run=dry_run).to_dict(), indent=2)
+
+
+@mcp.tool()
+def curator_pin(path: str) -> str:
+    """Pin a vault note so the curator never archives or compresses it."""
+    _get_curator().pin_note(path)
+    return json.dumps({"ok": True, "pinned": path}, indent=2)
+
+
+@mcp.tool()
+def curator_unpin(path: str) -> str:
+    """Remove curator pin from a vault note."""
+    _get_curator().unpin_note(path)
+    return json.dumps({"ok": True, "unpinned": path}, indent=2)
+
+
+@mcp.tool()
+def curator_restore(path: str, stamp: str = "") -> str:
+    """Restore an archived note from ~/.vault-memory/archive/ back into the vault."""
+    result = _get_curator().restore_archived(path, stamp=stamp or None)
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+def mark_vault_note_invalid(path: str, reason: str = "") -> str:
+    """Mark a note as invalid/false/non-functional. Curator will archive it on next run."""
+    return json.dumps(_get_curator().mark_invalid(path, reason=reason), indent=2)
+
+
+@mcp.tool()
+def set_vault_note_expiry(path: str, expires_at: str) -> str:
+    """Set ISO expiration date on a note (e.g. 2026-12-31T00:00:00+00:00). Archives when expired."""
+    return json.dumps(_get_curator().set_expiry(path, expires_at), indent=2)
+
+
+@mcp.tool()
+def delete_vault_note(path: str) -> str:
+    """Archive a note immediately and purge vector/graph indexes (recoverable from archive/)."""
+    result = _get_curator().delete_note(path)
+    if result.get("ok"):
+        _get_sync().run(force=False)
+    return json.dumps(result, indent=2)
 
 
 def main() -> None:
