@@ -42,6 +42,7 @@ def test_build_agent_frontmatter_anti_pattern():
                 "date": "2026-06-17",
                 "outcome": "failure",
                 "command": "docker compose up",
+                "cwd": "/workspace",
                 "exit_code": 1,
                 "actual": "iptables failed",
             }
@@ -89,6 +90,32 @@ def test_rank_agent_hit_boosts_success():
     assert rank_agent_hit(hit, fm_success) > rank_agent_hit(hit, fm_failure)
 
 
+def test_validate_agent_verified_in_requires_recreation():
+    from vault_memory_mcp.agent_memory import validate_agent_verified_in
+
+    issues = validate_agent_verified_in(
+        "solution",
+        [{"test_id": "t1", "date": "2026-06-17", "outcome": "success"}],
+    )
+    assert any("command" in i for i in issues)
+
+
+def test_write_agent_memory_rejects_missing_recreation(tmp_path):
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    rel, _, issues = write_agent_memory(
+        vault,
+        memory_type="solution",
+        title="Incomplete",
+        body="Missing recreation metadata.",
+        source="internal://test",
+        verified_in=[],
+    )
+    assert rel == ""
+    assert issues
+    assert not list(vault.rglob("*.md"))
+
+
 def test_write_agent_memory_paths(tmp_path):
     vault = tmp_path / "vault"
     vault.mkdir()
@@ -104,6 +131,7 @@ def test_write_agent_memory_paths(tmp_path):
                 "date": "2026-06-17",
                 "outcome": "success",
                 "command": "dockerd --storage-driver=vfs",
+                "cwd": "/workspace",
                 "exit_code": 0,
             }
         ],
@@ -121,6 +149,7 @@ def test_query_agent_guidance_empty_graph(tmp_path):
     graph = MagicMock()
     graph.search_with_graph_context = MagicMock(return_value=[])
     graph.query_readonly = MagicMock(return_value=[])
+    graph.vector = None
     vault = tmp_path / "vault"
     vault.mkdir()
 

@@ -42,7 +42,8 @@ curator:
     - "playbooks/**"
     - "tests/success/**"
     - "**/test-recipe*.md"
-    - "Memory/Agent/**"
+    - "Memory/Agent/Solutions/**"
+    - "Memory/Agent/Anti-Patterns/**"
   protect_tags:
     - pinned
     - test-success

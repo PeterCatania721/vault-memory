@@ -14,14 +14,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .embeddings import embed_texts
 from .graph import GraphStore
-from .obsidian import read_note, write_note
+from .obsidian import read_note
 from .provenance import (
     ProvenanceStore,
     build_research_frontmatter,
     hybrid_search,
     parse_frontmatter,
-    stable_fact_id,
     validate_frontmatter,
     write_research_note,
 )
@@ -43,17 +43,7 @@ ABSTRACTION_LAYER = {
     "lesson": "abstract",
 }
 
-VERIFIED_IN_OPTIONAL = (
-    "command",
-    "cwd",
-    "exit_code",
-    "expected",
-    "actual",
-    "git_commit",
-    "containers",
-    "software_version",
-    "system",
-)
+RECREATION_REQUIRED = ("command", "cwd", "exit_code")
 
 
 def validate_verified_in_entry(entry: dict[str, Any], index: int = 0) -> list[str]:
@@ -72,6 +62,33 @@ def validate_verified_in_entry(entry: dict[str, Any], index: int = 0) -> list[st
             int(entry["exit_code"])
         except (TypeError, ValueError):
             issues.append(f"verified_in[{index}] exit_code must be integer")
+    return issues
+
+
+def validate_agent_verified_in(
+    memory_type: str, verified_in: list[dict[str, Any]] | None
+) -> list[str]:
+    """Solution and anti-pattern memory must include recreation metadata."""
+    issues: list[str] = []
+    if memory_type not in ("solution", "anti-pattern"):
+        return issues
+    if not verified_in:
+        issues.append(f"{memory_type} requires at least one verified_in entry")
+        return issues
+    for i, entry in enumerate(verified_in):
+        issues.extend(validate_verified_in_entry(entry, i))
+        for req in RECREATION_REQUIRED:
+            if req == "exit_code":
+                if entry.get(req) is None:
+                    issues.append(f"verified_in[{i}] missing {req} (recreation required)")
+            elif not entry.get(req):
+                issues.append(f"verified_in[{i}] missing {req} (recreation required)")
+    expected_outcome = "success" if memory_type == "solution" else "failure"
+    latest = verified_in[-1]
+    if str(latest.get("outcome", "")).lower() != expected_outcome:
+        issues.append(
+            f"{memory_type} requires latest verified_in outcome={expected_outcome!r}"
+        )
     return issues
 
 
@@ -95,7 +112,7 @@ def build_agent_frontmatter(
     if memory_type == "solution":
         tags.extend(["test-success", "replicable"])
     elif memory_type == "anti-pattern":
-        tags.extend(["invalid-data", "avoid"])
+        tags.extend(["avoid"])
 
     fm = build_research_frontmatter(
         source=source,
@@ -154,8 +171,9 @@ def write_agent_memory(
         task_id=task_id,
     )
     issues = validate_frontmatter(fm, memory_note=True)
-    for i, entry in enumerate(verified_in or []):
-        issues.extend(validate_verified_in_entry(entry, i))
+    issues.extend(validate_agent_verified_in(memory_type, verified_in))
+    if issues:
+        return "", fm, issues
     write_research_note(vault_path, rel, title, body, fm)
     return rel, fm, issues
 
@@ -248,18 +266,26 @@ def _enrich_hit(
     }
 
 
+def _semantic_similarity(model: str, query: str, text: str) -> float:
+    if not text.strip():
+        return 0.0
+    vectors = embed_texts(model, [query, text])
+    return float(sum(a * b for a, b in zip(vectors[0], vectors[1], strict=True)))
+
+
 def query_failure_patterns(
     graph: GraphStore,
     query: str,
     limit: int = 5,
 ) -> list[dict[str, Any]]:
-    """Neo4j concrete layer: TestRuns with failure outcome linked to Facts."""
+    """Neo4j concrete layer: failure TestRuns ranked by semantic similarity to query."""
+    if not graph.vector:
+        return []
     try:
         rows = graph.query_readonly(
             """
             MATCH (f:Fact)-[:VERIFIED_IN]->(t:TestRun)
             WHERE toLower(t.outcome) = 'failure'
-            OPTIONAL MATCH (n:Note {path: f.path})
             RETURN f.path AS path,
                    f.summary AS title,
                    f.confidence AS confidence,
@@ -276,22 +302,22 @@ def query_failure_patterns(
             ORDER BY t.date DESC
             LIMIT $limit
             """,
-            {"limit": limit * 3},
+            {"limit": limit * 5},
         )
     except Exception:
         return []
 
+    model = graph.vector.embedding_model
     enriched: list[dict[str, Any]] = []
-    query_lower = query.lower()
     for row in rows:
         item = dict(row)
         item["memory_type"] = "anti-pattern"
         item["abstraction_layer"] = "concrete"
-        title = str(item.get("title") or "")
-        path = str(item.get("path") or "")
-        text = f"{title} {path} {item.get('command') or ''} {item.get('actual') or ''}".lower()
-        overlap = sum(1 for word in query_lower.split() if len(word) > 2 and word in text)
-        item["agent_score"] = 0.4 + min(overlap * 0.1, 0.5)
+        text = " ".join(
+            str(item.get(k) or "")
+            for k in ("title", "path", "command", "actual", "expected")
+        )
+        item["agent_score"] = round(_semantic_similarity(model, query, text), 4)
         enriched.append(item)
 
     enriched.sort(key=lambda x: x.get("agent_score", 0), reverse=True)
@@ -305,11 +331,7 @@ def query_agent_guidance(
     limit: int = 5,
     depth: int = 2,
 ) -> dict[str, Any]:
-    """Optimized retrieval for agentic task execution.
-
-    Returns tiered guidance: solutions to apply, anti-patterns to avoid,
-    and abstract lessons — ranked by agent_score (success-boosted).
-    """
+    """Optimized retrieval for agentic task execution."""
     store = ProvenanceStore(graph, vault_path)
     raw_hits = hybrid_search(graph, query, limit=limit * 3, depth=depth, vault_path=vault_path)
 
@@ -345,6 +367,6 @@ def query_agent_guidance(
         "lessons": lessons[:limit],
         "ranking": (
             "agent_score = semantic_score + success_boost - failure_penalty; "
-            "concrete failures from Neo4j TestRun nodes; abstract guidance from Obsidian Memory/Agent/"
+            "concrete failures ranked by embedding similarity on TestRun metadata"
         ),
     }

@@ -143,8 +143,8 @@ def test_mcp_tools_with_live_backends(integration_config, tmp_path, reset_server
     semantic = json.loads(srv.search_vault_semantic("vector database", limit=2))
     assert semantic.get("results")
 
-    graphrag = json.loads(srv.search_vault_graphrag("vector database", limit=2))
-    assert graphrag.get("results")
+    hybrid = json.loads(srv.search_vault_hybrid("vector database", limit=2))
+    assert hybrid.get("results")
 
     neighbors = json.loads(srv.graph_neighbors("project-alpha.md"))
     assert neighbors.get("neighbors") is not None
@@ -318,6 +318,7 @@ def test_mcp_add_agent_memory(integration_config, tmp_path, reset_server_globals
                 "date": "2026-06-17",
                 "outcome": "success",
                 "command": "pytest -m integration",
+                "cwd": "/workspace",
                 "exit_code": 0,
             }
         ]
@@ -334,7 +335,7 @@ def test_mcp_add_agent_memory(integration_config, tmp_path, reset_server_globals
     assert out["ok"] is True
     assert "Memory/Agent/Solutions/" in out["path"]
 
-    guidance = json.loads(srv.query_agent_guidance_tool("MCP agent memory", limit=3))
+    guidance = json.loads(srv.query_agent_guidance("MCP agent memory", limit=3))
     assert "solutions" in guidance
 
     if out.get("path"):

@@ -394,9 +394,12 @@ class VaultCurator:
     ) -> CuratorAction:
         rel = note.path
 
-        # Anti-patterns are protected knowledge — never archive (agents need them to avoid failures)
-        if ANTI_PATTERN_FRONTMATTER.search(note.content) or rel.startswith("Memory/Agent/"):
-            return CuratorAction(rel, "protected", "agent memory (solution/anti-pattern/lesson)", 1)
+        if (
+            ANTI_PATTERN_FRONTMATTER.search(note.content)
+            or rel.startswith("Memory/Agent/Solutions/")
+            or rel.startswith("Memory/Agent/Anti-Patterns/")
+        ):
+            return CuratorAction(rel, "protected", "agent solution or anti-pattern memory", 1)
 
         # Step 2 first — actively remove false / expired / spoiled data
         if self._is_invalid(note):
@@ -582,7 +585,8 @@ class VaultCurator:
         summary = prefix + ", ".join(summary_parts)
 
         report_path = self._write_report(result, summary)
-        self._write_curator_log(result, summary, dry_run=dry_run)
+        if not dry_run:
+            self._write_curator_log(result, summary, dry_run=False)
         if not dry_run:
             state = self.load_state()
             state["last_run_at"] = start.isoformat()

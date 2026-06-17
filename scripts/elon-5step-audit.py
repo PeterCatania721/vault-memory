@@ -94,8 +94,8 @@ def step2_delete(sync: VaultSync, cfg) -> dict:
 def step3_simplify(cfg) -> dict:
     """Simplify what remains."""
     findings = []
-    if cfg.docker.mode not in ("unified", "separate"):
-        findings.append(f"unknown docker.mode={cfg.docker.mode}")
+    if cfg.docker.mode != "unified":
+        findings.append(f"docker.mode should be unified (got {cfg.docker.mode})")
     if cfg.vector.chunk_size > 1200:
         findings.append("chunk_size > 1200 may hurt retrieval precision")
 

@@ -7,4 +7,4 @@ uv sync --all-extras
 uv run vault-memory-mcp
 ```
 
-**v0.2.3** — 26 tools. Agent default: `query_agent_guidance`. General retrieval: `search_vault_hybrid`.
+**v0.2.4** — 25 tools. Agent: `query_agent_guidance`. General: `search_vault_hybrid`.

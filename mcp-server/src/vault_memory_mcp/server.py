@@ -11,7 +11,7 @@ from mcp.server.fastmcp import FastMCP
 from .config import AppConfig, load_config, save_config
 from .curator import VaultCurator
 from .obsidian import keyword_search, list_notes, read_note
-from .agent_memory import query_agent_guidance, write_agent_memory
+from .agent_memory import query_agent_guidance as run_agent_guidance, write_agent_memory
 from .provenance import (
     ProvenanceStore,
     build_research_frontmatter,
@@ -94,7 +94,7 @@ def update_config(updates_json: str) -> str:
         os.path.expanduser(data["vault"]["path"])
     ).resolve()
     cfg.vault.ignore = data["vault"].get("ignore", cfg.vault.ignore)
-    for field in ("enabled", "url", "collection", "embedding_model", "chunk_size", "chunk_overlap"):
+    for field in ("enabled", "embedding_model", "chunk_size", "chunk_overlap", "provider"):
         if field in data.get("vector", {}):
             setattr(cfg.vector, field, data["vector"][field])
     for field in ("enabled", "uri", "user", "password", "database"):
@@ -274,7 +274,9 @@ def add_agent_memory(
     except ValueError as exc:
         return json.dumps({"ok": False, "error": str(exc)})
     if issues:
-        return json.dumps({"ok": False, "path": rel, "issues": issues})
+        return json.dumps({"ok": False, "issues": issues})
+    if not rel:
+        return json.dumps({"ok": False, "issues": issues or ["write failed"]})
     prov = {"ok": False}
     curator_preview: dict[str, Any] | None = None
     if sync.graph:
@@ -296,7 +298,7 @@ def add_agent_memory(
 
 
 @mcp.tool()
-def query_agent_guidance_tool(query: str, limit: int = 5, depth: int = 2) -> str:
+def query_agent_guidance(query: str, limit: int = 5, depth: int = 2) -> str:
     """Optimized agentic retrieval: solutions to apply, anti-patterns to avoid, abstract lessons.
 
     Ranks by agent_score (success-boosted semantic). Concrete failures from Neo4j TestRun;
@@ -305,7 +307,7 @@ def query_agent_guidance_tool(query: str, limit: int = 5, depth: int = 2) -> str
     sync = _get_sync()
     if not sync.graph:
         return json.dumps({"error": "Graph store disabled in config"})
-    result = query_agent_guidance(
+    result = run_agent_guidance(
         sync.graph,
         _get_config().vault.path,
         query,
@@ -339,19 +341,6 @@ def query_stale_facts(days: int = 90, source_type: str = "") -> str:
     st = source_type.strip() or None
     rows = store.query_unverified_stale(days=days, source_type=st)
     return json.dumps({"days": days, "source_type": st, "facts": rows}, indent=2)
-
-
-@mcp.tool()
-def search_vault_graphrag(query: str, limit: int = 5, depth: int = 2) -> str:
-    """GraphRAG: Neo4j vector search + wikilink graph context expansion."""
-    sync = _get_sync()
-    if not sync.graph:
-        return json.dumps({"error": "Graph store disabled in config"})
-    hits = sync.graph.search_with_graph_context(query, limit=limit, depth=depth)
-    for hit in hits:
-        if hit.get("path"):
-            _record_usage(hit["path"], "graphrag_search")
-    return json.dumps({"query": query, "results": hits}, indent=2)
 
 
 @mcp.tool()

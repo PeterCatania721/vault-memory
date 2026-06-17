@@ -7,12 +7,14 @@ import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "mcp-server" / "src"))
 
 from vault_memory_mcp.config import load_config
 from vault_memory_mcp.embeddings import embed_texts
-from vault_memory_mcp.graph import GraphStore, VERIFICATION_INDEX
+from vault_memory_mcp.graph import GraphStore
+
+VERIFICATION_INDEX = "verification_embeddings"  # legacy v0.1.x index name
 
 
 def _qdrant_client():

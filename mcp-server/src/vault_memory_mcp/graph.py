@@ -14,8 +14,6 @@ from .obsidian import Note, chunk_text
 READ_ONLY_PREFIXES = ("MATCH", "RETURN", "WITH", "OPTIONAL", "CALL")
 
 VAULT_CHUNK_INDEX = "vault_chunk_embeddings"
-VERIFICATION_INDEX = "verification_embeddings"
-
 
 class GraphStore:
     """Neo4j graph + vector index (GraphRAG-ready)."""
@@ -54,19 +52,6 @@ class GraphStore:
                 CREATE VECTOR INDEX {VAULT_CHUNK_INDEX} IF NOT EXISTS
                 FOR (c:Chunk)
                 ON c.embedding
-                OPTIONS {{
-                  indexConfig: {{
-                    `vector.dimensions`: {dim},
-                    `vector.similarity_function`: 'cosine'
-                  }}
-                }}
-                """
-            )
-            session.run(
-                f"""
-                CREATE VECTOR INDEX {VERIFICATION_INDEX} IF NOT EXISTS
-                FOR (v:Verification)
-                ON v.embedding
                 OPTIONS {{
                   indexConfig: {{
                     `vector.dimensions`: {dim},
@@ -277,16 +262,11 @@ class GraphStore:
                 chunks = session.run(
                     "MATCH (c:Chunk {record_type: 'vault_chunk'}) RETURN count(c) AS c"
                 ).single()["c"]
-                verifications = session.run(
-                    "MATCH (v:Verification) WHERE v.embedding IS NOT NULL RETURN count(v) AS c"
-                ).single()["c"]
             vector_info = {
                 "ok": True,
                 "provider": "neo4j",
                 "chunks": chunks,
-                "verifications_indexed": verifications,
                 "chunk_index": VAULT_CHUNK_INDEX,
-                "verification_index": VERIFICATION_INDEX,
             }
             if self.vector is not None:
                 vector_info["embedding_model"] = self.vector.embedding_model

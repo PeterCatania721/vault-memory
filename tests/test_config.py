@@ -34,3 +34,4 @@ def test_curator_config_defaults(tmp_path: Path):
     assert cfg.curator.enabled is True
     assert cfg.curator.interval_hours == 168
     assert "playbooks/**" in cfg.curator.protect_paths
+    assert "Memory/Agent/Solutions/**" in cfg.curator.protect_paths

@@ -27,13 +27,8 @@ def services_healthy(
     neo4j_password: str = "vaultmemory",
     **_kwargs: object,
 ) -> bool:
-    """Neo4j-only health check (Qdrant removed)."""
+    """Neo4j-only health check."""
     return neo4j_healthy(neo4j_uri, neo4j_user, neo4j_password)
-
-
-def qdrant_healthy(url: str = "http://127.0.0.1:6333") -> bool:
-    """Deprecated — always False; Qdrant is no longer required."""
-    return False
 
 
 def ensure_docker_services(project_root: Path | None = None) -> bool:

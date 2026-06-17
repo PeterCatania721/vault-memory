@@ -1,14 +1,14 @@
 # vault-memory
 
-[![Status](https://img.shields.io/badge/status-stable%20(v0.2.3)-green)](STATUS.md)
-[![Tests](https://img.shields.io/badge/tests-81%2F81%20passing-brightgreen)](STATUS.md)
+[![Status](https://img.shields.io/badge/status-stable%20(v0.2.4)-green)](STATUS.md)
+[![Tests](https://img.shields.io/badge/tests-83%2F83%20passing-brightgreen)](STATUS.md)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 Cross-agent plugin for **Obsidian + Neo4j** memory (graph + vector embeddings + provenance). Works with **Grok Build**, **Claude Code**, and **Hermes Agent**.
 
 Built from patterns engineers use successfully: markdown vault as source of truth, local embeddings, single Docker database, MCP stdio, incremental sync.
 
-> **Current status:** v0.2.3 — agentic memory layers, Neo4j concrete + Obsidian abstract, 26 MCP tools, [full details in STATUS.md](STATUS.md).
+> **Current status:** v0.2.4 — Elon-simplified stack, 25 MCP tools, agent memory with enforced recreation metadata, [full details in STATUS.md](STATUS.md).
 
 ## Architecture
 
@@ -19,8 +19,7 @@ Obsidian vault (.md) — source of truth + YAML provenance on Memory/ notes
        └─► Neo4j (single store)
               ├─► :Note + LINKS_TO (wikilinks)
               ├─► :Chunk + vector index (semantic search)
-              ├─► :Verification + embeddings (test evidence)
-              └─► :Fact → :Source → :TestRun (provenance graph)
+              └─► :Fact → :Source → :TestRun (concrete recreation + provenance)
                      │
                      ▼
               vault-memory MCP (stdio)
@@ -77,7 +76,7 @@ Legacy Qdrant is not used. If an old `qdrant` container is still running, stop a
 | Neo4j | 5.26.0-community |
 | neo4j (Python) | 5.26.0 |
 | sentence-transformers | 3.3.1 |
-| vault-memory-mcp | 0.2.3 |
+| vault-memory-mcp | 0.2.4 |
 
 ## Tests (Elon loop)
 

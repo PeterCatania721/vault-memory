@@ -21,12 +21,10 @@ class VaultConfig:
 
 @dataclass
 class VectorConfig:
-    """Embedding settings — vectors are stored on Neo4j node properties."""
+    """Embedding settings — vectors are stored on Neo4j :Chunk nodes."""
 
     enabled: bool = True
     provider: str = "neo4j"
-    url: str = ""  # deprecated (Qdrant removed)
-    collection: str = "vault_memory"  # deprecated label only
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     chunk_size: int = 800
     chunk_overlap: int = 100
@@ -67,7 +65,8 @@ class CuratorConfig:
             "playbooks/**",
             "tests/success/**",
             "**/test-recipe*.md",
-            "Memory/Agent/**",
+            "Memory/Agent/Solutions/**",
+            "Memory/Agent/Anti-Patterns/**",
         ]
     )
     protect_tags: list[str] = field(
@@ -94,8 +93,6 @@ class AppConfig:
             "vector": {
                 "enabled": self.vector.enabled,
                 "provider": self.vector.provider,
-                "url": self.vector.url,
-                "collection": self.vector.collection,
                 "embedding_model": self.vector.embedding_model,
                 "chunk_size": self.vector.chunk_size,
                 "chunk_overlap": self.vector.chunk_overlap,

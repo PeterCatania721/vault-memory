@@ -1,5 +1,20 @@
 # Release notes
 
+## 0.2.4 — 2026-06-17 (Elon algorithm pass)
+
+**01 Less dumb requirements:** `add_agent_memory` enforces recreation metadata (`command`, `cwd`, `exit_code`) for solutions and anti-patterns.
+
+**02 Delete:** Removed `search_vault_graphrag` (use `search_vault_hybrid`), dead `:Verification` index, Qdrant migration to `scripts/archive/`, `docker-compose.separate.yml`, deprecated `vector.url`/`collection`.
+
+**03 Optimize:** CPU-only PyTorch pin; semantic ranking for failure `TestRun` nodes; renamed MCP tool `query_agent_guidance` (dropped `_tool` suffix).
+
+**04 Accelerate:** `docker-up.sh` auto-starts dockerd on restricted cloud VMs (`vfs` + no iptables).
+
+**05 Automate:** Curator skips vault log writes on dry-run; protects only `Solutions/` + `Anti-Patterns/` (lessons can age out).
+
+- Policy stubs shipped in test fixtures: `Long-Term-Memory-Policy`, `Test-Memory-Recreation-Policy`
+- **25 MCP tools** (was 26)
+
 ## 0.2.3 — 2026-06-17
 
 - **Agentic memory layer** — two-tier architecture: concrete Neo4j (`TestRun` with command/cwd/exit_code) + abstract Obsidian (`Memory/Agent/Solutions|Anti-Patterns|Lessons`)

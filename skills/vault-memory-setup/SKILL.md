@@ -55,10 +55,12 @@ hermes mcp test vault_memory
 ## Docker
 
 ```bash
-docker compose -f docker/docker-compose.yml --profile unified up -d
+bash scripts/docker-up.sh
 ```
 
-Only Neo4j starts. Remove legacy Qdrant if still present: `docker rm -f qdrant`.
+On restricted cloud VMs, `docker-up.sh` starts dockerd with `vfs` storage if needed.
+
+Legacy Qdrant containers are not used — remove with `docker rm -f qdrant` if present.
 
 ## Verify
 
