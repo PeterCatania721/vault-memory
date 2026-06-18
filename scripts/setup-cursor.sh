@@ -4,6 +4,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CURSOR_PLUGINS="${HOME}/.cursor/plugins/local"
+CURSOR_SKILLS="${HOME}/.cursor/skills"
 
 echo "==> vault-memory Cursor setup"
 
@@ -22,6 +23,20 @@ if [[ -n "${TARGET}" ]]; then
   ln -sf "${ROOT}" "${TARGET}"
   echo "Linked plugin: ${TARGET} -> ${ROOT}"
 fi
+
+mkdir -p "${CURSOR_SKILLS}"
+for skill in "${ROOT}"/skills/*/; do
+  name="$(basename "${skill}")"
+  target="${CURSOR_SKILLS}/${name}"
+  if [[ -L "${target}" ]]; then
+    rm "${target}"
+  elif [[ -e "${target}" ]]; then
+    echo "Skill exists (not a symlink): ${target} — skip"
+    continue
+  fi
+  ln -sf "${skill%/}" "${target}"
+  echo "Linked skill: ${target} -> ${skill%/}"
+done
 
 echo ""
 echo "Cursor MCP: ${ROOT}/.cursor/mcp.json (uses \${workspaceFolder})"
